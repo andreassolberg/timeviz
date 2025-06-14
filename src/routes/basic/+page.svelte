@@ -111,10 +111,6 @@
 </div>
 
 <style>
-	.weather-timeline {
-		/* No padding to prevent interference with SVG positioning */
-	}
-
 	.error-message {
 		background-color: #fef3cd;
 		border: 1px solid #ffeaa7;
@@ -122,15 +118,5 @@
 		padding: 0.75rem;
 		margin-bottom: 1rem;
 		color: #856404;
-	}
-
-	.location-info {
-		margin-bottom: 1rem;
-		font-size: 0.875rem;
-		color: #666;
-	}
-
-	.location-info p {
-		margin: 0.25rem 0;
 	}
 </style>
