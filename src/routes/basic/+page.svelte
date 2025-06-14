@@ -11,6 +11,7 @@
 		weatherData,
 		temperatureMarkers,
 		temperatureScale,
+		extremeTemperatureMarkers,
 		precipitationMarkers,
 		precipitationScale,
 		solarMarkers,
@@ -188,6 +189,29 @@
 				>
 					{marker.value}mm
 				</text>
+			{/each}
+		{/if}
+
+		<!-- Extreme temperature labels -->
+		{#if extremeTemperatureMarkers && extremeTemperatureMarkers.length > 0}
+			{#each extremeTemperatureMarkers as marker}
+				{#if marker.x !== undefined && marker.y !== undefined}
+					<text
+						x={marker.x}
+						y={marker.y + 80 + (marker.max ? -5 : 5)}
+						font-family="sans-serif"
+						font-size={6}
+						font-weight="bold"
+						fill={marker.max ? '#dc2626' : '#2563eb'}
+						stroke="white"
+						stroke-width="2"
+						paint-order="stroke fill"
+						dominant-baseline="central"
+						text-anchor="middle"
+					>
+						{marker.temperature?.toFixed(1)}°
+					</text>
+				{/if}
 			{/each}
 		{/if}
 

@@ -37,6 +37,7 @@ export interface WeatherDataResult {
 	// Temperatur:
 	temperatureMarkers: TimeTick[];
 	temperatureScale: ValueScaleInfo;
+	extremeTemperatureMarkers: TimeTick[];  // Lokale min/max temperaturer
 	
 	// Nedbør:
 	precipitationMarkers: TimeTick[];
@@ -86,10 +87,14 @@ export class WeatherData {
 		const precipitationScale = this.createPrecipitationScale();
 		
 		// Generer markers for hver værtype:
+		const temperatureMarkers = this.createTemperatureMarkers(rawWeatherData, temperatureScale);
+		const extremeTemperatureMarkers = this.getExtremeTemperatureMarkers(temperatureMarkers);
+		
 		return {
 			weatherData: rawWeatherData,
-			temperatureMarkers: this.createTemperatureMarkers(rawWeatherData, temperatureScale),
+			temperatureMarkers,
 			temperatureScale: this.getScaleInfo(temperatureScale),
+			extremeTemperatureMarkers,
 			precipitationMarkers: this.createPrecipitationMarkers(rawWeatherData, precipitationScale),
 			precipitationScale: this.getScaleInfo(precipitationScale, true) // true = skip row markers
 		};
@@ -157,6 +162,93 @@ export class WeatherData {
 			...tick,
 			y: precipitationScale.scale(tick.precipitation || 0)
 		}));
+	}
+
+	/**
+	 * Find extreme temperature markers (local min/max) within 12-hour windows
+	 * @param temperatureMarkers - Array of temperature markers with coordinates
+	 * @returns Array of markers that are local extremes with max/min properties
+	 */
+	private getExtremeTemperatureMarkers(temperatureMarkers: TimeTick[]): TimeTick[] {
+		const extremeMarkers: TimeTick[] = [];
+		const windowHours = 12; // 12-hour window (6 hours before + 6 hours after)
+		const windowMs = windowHours * 60 * 60 * 1000;
+		
+		// Filter markers with valid temperature data
+		const validMarkers = temperatureMarkers.filter(marker => 
+			marker.temperature !== undefined && marker.ts instanceof Date
+		);
+		
+		for (let i = 0; i < validMarkers.length; i++) {
+			const currentMarker = validMarkers[i];
+			const currentTime = currentMarker.ts.getTime();
+			const currentTemp = currentMarker.temperature!;
+			
+			// Find all markers within 12-hour window (6 hours before + 6 hours after)
+			const windowMarkers = validMarkers.filter(marker => {
+				const markerTime = marker.ts.getTime();
+				const timeDiff = Math.abs(markerTime - currentTime);
+				return timeDiff <= windowMs / 2; // ±6 hours
+			});
+			
+			if (windowMarkers.length < 3) continue; // Need at least 3 points for meaningful comparison
+			
+			// Check if current marker is local maximum
+			const isLocalMax = windowMarkers.every(marker => 
+				marker.temperature! <= currentTemp
+			);
+			
+			// Check if current marker is local minimum
+			const isLocalMin = windowMarkers.every(marker => 
+				marker.temperature! >= currentTemp
+			);
+			
+			// Only mark as extreme if it's clearly max or min (not equal to all others)
+			const hasVariation = windowMarkers.some(marker => 
+				marker.temperature! !== currentTemp
+			);
+			
+			if (hasVariation && (isLocalMax || isLocalMin)) {
+				extremeMarkers.push({
+					...currentMarker,
+					max: isLocalMax,
+					min: isLocalMin
+				});
+			}
+		}
+		
+		// Remove consecutive extremes of the same type to avoid clutter
+		return this.filterConsecutiveExtremes(extremeMarkers);
+	}
+	
+	/**
+	 * Filter out consecutive extreme markers of the same type to reduce clutter
+	 * @param extremeMarkers - Array of extreme markers
+	 * @returns Filtered array with no consecutive same-type extremes
+	 */
+	private filterConsecutiveExtremes(extremeMarkers: TimeTick[]): TimeTick[] {
+		if (extremeMarkers.length <= 1) return extremeMarkers;
+		
+		const filtered: TimeTick[] = [extremeMarkers[0]];
+		
+		for (let i = 1; i < extremeMarkers.length; i++) {
+			const current = extremeMarkers[i];
+			const previous = filtered[filtered.length - 1];
+			
+			// Add current marker if it's a different type than the previous
+			if ((current.max && !previous.max) || (current.min && !previous.min)) {
+				filtered.push(current);
+			} else {
+				// If same type, keep the one with more extreme temperature
+				if (current.max && previous.max && current.temperature! > previous.temperature!) {
+					filtered[filtered.length - 1] = current;
+				} else if (current.min && previous.min && current.temperature! < previous.temperature!) {
+					filtered[filtered.length - 1] = current;
+				}
+			}
+		}
+		
+		return filtered;
 	}
 
 	/**
