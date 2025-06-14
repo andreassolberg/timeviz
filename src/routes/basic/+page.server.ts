@@ -33,7 +33,8 @@ export const load: PageServerLoad = async () => {
 				hourTicks: timeline.getHourTicks(),
 				dayLabelTicks: timeline.getDayLabelTicks(),
 				nowX: timeline.getNowX(),
-				hourWidth: timeline.getHourWidth()
+				hourWidth: timeline.getHourWidth(),
+				dayNightMarkers: timeline.getDayNightMarkers(6, 22) // Dag fra 06:00 til 22:00
 			},
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			location: {

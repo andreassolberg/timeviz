@@ -239,6 +239,73 @@ class Timeline {
 		
 		return this.scale(oneHourLater) - this.scale(now);
 	}
+
+	/**
+	 * Get day and night markers for the timeline
+	 * @param dayStartHour - Hour when day starts (e.g., 7)
+	 * @param nightStartHour - Hour when night starts (e.g., 23)
+	 * @returns Array of TimeWindow objects with day property
+	 */
+	getDayNightMarkers(dayStartHour: number = 7, nightStartHour: number = 23): TimeWindow[] {
+		const markers: TimeWindow[] = [];
+		
+		// Start from the beginning of the timeline
+		const current = new Date(this.from);
+		current.setMinutes(0, 0, 0);
+		
+		// Process the entire timeline
+		while (current < this.to) {
+			const currentHour = current.getHours();
+			const currentDate = new Date(current);
+			
+			// Determine if we're starting in day or night
+			const isDay = currentHour >= dayStartHour && currentHour < nightStartHour;
+			
+			// Find the end of this period
+			const periodEnd = new Date(current);
+			if (isDay) {
+				// Day period - ends at nightStartHour
+				periodEnd.setHours(nightStartHour, 0, 0, 0);
+				// If nightStartHour has already passed today, it's tomorrow
+				if (periodEnd <= current) {
+					periodEnd.setDate(periodEnd.getDate() + 1);
+				}
+			} else {
+				// Night period - ends at dayStartHour
+				periodEnd.setHours(dayStartHour, 0, 0, 0);
+				// If we're past midnight and before dayStartHour, it's today
+				// Otherwise it's tomorrow
+				if (currentHour >= nightStartHour || periodEnd <= current) {
+					periodEnd.setDate(periodEnd.getDate() + 1);
+				}
+			}
+			
+			// Cap the period end at timeline end
+			const actualEnd = periodEnd > this.to ? new Date(this.to) : periodEnd;
+			
+			// Create the time window
+			const window: TimeWindow = {
+				from: {
+					ts: new Date(current),
+					tstr: this.formatDateTime(current),
+					x: this.scale(current)
+				},
+				to: {
+					ts: new Date(actualEnd),
+					tstr: this.formatDateTime(actualEnd),
+					x: this.scale(actualEnd)
+				},
+				day: isDay
+			};
+			
+			markers.push(window);
+			
+			// Move to the next period
+			current.setTime(periodEnd.getTime());
+		}
+		
+		return markers;
+	}
 }
 
 export default Timeline;

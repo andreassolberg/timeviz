@@ -16,7 +16,7 @@
 		location,
 		error
 	} = data;
-	const { hourTicks, dayLabelTicks, nowX, hourWidth } = timeline;
+	const { hourTicks, dayLabelTicks, nowX, hourWidth, dayNightMarkers } = timeline;
 
 	// Generate SVG path using d3.line with smooth curves
 	$: temperaturePath =
@@ -37,7 +37,21 @@
 	{/if}
 
 	<SVGViz width={timeline.width} height={400} full="width" margin={10}>
-		<!-- Value scale grid lines - first -->
+		<!-- Day/Night background rectangles - first -->
+		{#if dayNightMarkers && dayNightMarkers.length > 0}
+			{#each dayNightMarkers as marker}
+				<rect
+					x={marker.from.x}
+					y={70}
+					width={marker.to.x - marker.from.x}
+					height={310}
+					fill={marker.day ? 'rgba(255, 255, 0, 0.03)' : 'rgba(0, 0, 0, 0.1)'}
+					opacity="0.3"
+				/>
+			{/each}
+		{/if}
+
+		<!-- Value scale grid lines - second -->
 		{#if temperatureMarkers && temperatureScale}
 			{#each temperatureScale.rowMarkers as marker}
 				<line
