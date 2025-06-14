@@ -219,6 +219,14 @@ class Timeline {
 			to: this.addXToTimeTick(window.to)
 		};
 	}
+
+	/**
+	 * Get the X coordinate for the current time ("now")
+	 * @returns The x-coordinate for the current timestamp
+	 */
+	getNowX(): number {
+		return this.scale(this.now);
+	}
 }
 
 export default Timeline;

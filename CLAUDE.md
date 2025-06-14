@@ -55,9 +55,36 @@ npm run format       # Auto-format code with prettier
 - Core logic classes in `src/lib/`
 - Global styles reset in `src/app.html`
 
+## Environment Variables
+
+Create a `.env` file in the project root with:
+
+```env
+# Koordinater for værstasjon
+LAT=63.4305
+LON=10.3951
+
+# Frost API klient-ID (valgfri - kun for historiske data)
+FROST_CLIENT_ID=your-frost-client-id
+
+# User agent for API-kall
+USER_AGENT=Timeviz/1.0 (kontakt@example.com)
+```
+
+Use `.env.example` as a template. Environment variables are automatically excluded from git.
+
+## Weather Data Integration
+
+- **YrDataProvider**: Fetches weather data from MET Norway APIs
+- **Locationforecast API**: Free weather forecasts (no registration required)
+- **Frost API**: Historical weather data (requires client ID from frost.met.no)
+- Server-side data loading ensures API keys stay secure
+- Weather data is converted to TimeTick format for timeline visualization
+
 ## Development Notes
 
 - When modifying SVGViz, ensure all derived values remain reactive
 - Timeline scale clamps values outside the time range
 - Hour ticks include both timestamp and formatted time string
 - The "now" tick has special styling (red, thicker line)
+- Weather data points are color-coded: blue for historical, orange for forecast
