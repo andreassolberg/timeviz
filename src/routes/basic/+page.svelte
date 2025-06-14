@@ -5,14 +5,29 @@
 	// Create timeline for 2 days past and 2 days future
 	const timeline = new Timeline(48, 48);
 	const hourTicks = timeline.getHourTicks();
+	const dayLabelTicks = timeline.getDayLabelTicks();
 </script>
 
 <SVGViz width={timeline.width} height={400} full="width" margin={10}>
+	<!-- Day labels at the top -->
+	{#each dayLabelTicks as dayTick}
+		<text
+			x={dayTick.x}
+			y={20}
+			font-family="sans-serif"
+			font-size={12}
+			text-anchor={dayTick.align}
+			fill="#000"
+			dominant-baseline="central">{dayTick.label}</text
+		>
+	{/each}
+
 	<!-- Hour tick lines -->
 	{#each hourTicks as tick}
 		<text
 			x={tick.x}
-			y={30}
+			y={tick.now ? 40 : 50}
+			font-family="sans-serif"
 			font-size={6}
 			text-anchor="middle"
 			fill="#333"
@@ -21,11 +36,11 @@
 		>
 		<line
 			x1={tick.x}
-			y1={100}
+			y1={70}
 			x2={tick.x}
 			y2={200}
 			stroke={tick.now ? 'red' : '#eee'}
-			stroke-width={tick.now ? '2' : '1'}
+			stroke-width={1}
 		/>
 	{/each}
 </SVGViz>

@@ -1,4 +1,5 @@
 import { scaleTime } from 'd3-scale';
+import type { TimeTick, TimeWindow } from './types/time';
 
 class Timeline {
 	now: Date;
@@ -37,9 +38,7 @@ class Timeline {
 		this.width = totalDays * this.daywidth;
 
 		// Create d3 scale with clamping
-		const baseScale = scaleTime()
-			.domain([this.from, this.to])
-			.range([0, this.width]);
+		const baseScale = scaleTime().domain([this.from, this.to]).range([0, this.width]);
 
 		// Wrap scale to clamp values outside domain
 		this.scale = (date: Date) => {
@@ -49,19 +48,17 @@ class Timeline {
 		};
 	}
 
-	getHourTicks() {
-		const ticks: Array<{
-			ts: Date;
-			tstr: string;
-			x: number;
-			now: boolean;
-		}> = [];
+	getHourTicks(): TimeTick[] {
+		const ticks: TimeTick[] = [];
 
-		// Helper function to format time as HH:mm
-		const formatTime = (date: Date): string => {
+		// Helper function to format time as HH or HH:mm
+		const formatTime = (date: Date, includeMinutes: boolean = false): string => {
 			const hours = date.getHours().toString().padStart(2, '0');
-			const minutes = date.getMinutes().toString().padStart(2, '0');
-			return `${hours}:${minutes}`;
+			if (includeMinutes) {
+				const minutes = date.getMinutes().toString().padStart(2, '0');
+				return `${hours}:${minutes}`;
+			}
+			return `${hours}`;
 		};
 
 		// Start from the beginning of the hour at 'from'
@@ -82,15 +79,145 @@ class Timeline {
 		// Add special tick for "now"
 		ticks.push({
 			ts: new Date(this.now),
-			tstr: formatTime(this.now),
+			tstr: formatTime(this.now, true),
 			x: this.scale(this.now),
 			now: true
 		});
 
 		// Sort ticks by timestamp
-		ticks.sort((a, b) => a.ts.getTime() - b.ts.getTime());
+		// ticks.sort((a, b) => a.ts.getTime() - b.ts.getTime());
 
 		return ticks;
+	}
+
+	/**
+	 * Get the time window represented by this timeline
+	 */
+	getTimeWindow(): TimeWindow {
+		return {
+			from: {
+				ts: new Date(this.from),
+				tstr: this.formatDateTime(this.from)
+			},
+			to: {
+				ts: new Date(this.to),
+				tstr: this.formatDateTime(this.to)
+			}
+		};
+	}
+
+	/**
+	 * Format a date as a readable date-time string
+	 */
+	private formatDateTime(date: Date): string {
+		return date.toLocaleString('no-NO', {
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	/**
+	 * Get day label ticks for all 12:00 (noon) slots within the time window
+	 * Returns TimeTick array with pretty formatted day labels
+	 */
+	getDayLabelTicks(): TimeTick[] {
+		const ticks: TimeTick[] = [];
+
+		// Start from the first noon at or after 'from'
+		const current = new Date(this.from);
+		current.setHours(12, 0, 0, 0);
+
+		// If we're before the window start, move to next day
+		if (current < this.from) {
+			current.setDate(current.getDate() + 1);
+		}
+
+		// Helper function to determine text alignment and adjusted timestamp based on position
+		const getAlignmentAndTimestamp = (tickDate: Date): { align: 'start' | 'middle' | 'end', adjustedTs: Date } => {
+			const hoursFromStart = (tickDate.getTime() - this.from.getTime()) / (1000 * 60 * 60);
+			const hoursFromEnd = (this.to.getTime() - tickDate.getTime()) / (1000 * 60 * 60);
+			
+			if (hoursFromStart < 5) {
+				return { align: 'start', adjustedTs: new Date(this.from) };
+			}
+			if (hoursFromEnd < 5) {
+				return { align: 'end', adjustedTs: new Date(this.to) };
+			}
+			return { align: 'middle', adjustedTs: new Date(tickDate) };
+		};
+
+		// Format function for day labels
+		const formatDayLabel = (date: Date): string => {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+
+			const tomorrow = new Date(today);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+
+			const yesterday = new Date(today);
+			yesterday.setDate(yesterday.getDate() - 1);
+
+			const tickDate = new Date(date);
+			tickDate.setHours(0, 0, 0, 0);
+
+			// Check for relative days
+			if (tickDate.getTime() === today.getTime()) {
+				return 'I dag';
+			} else if (tickDate.getTime() === tomorrow.getTime()) {
+				return 'I morgen';
+			} else if (tickDate.getTime() === yesterday.getTime()) {
+				return 'I går';
+			}
+
+			// Otherwise use weekday and date
+			return date.toLocaleDateString('no-NO', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric'
+			});
+		};
+
+		// Add tick for each noon within the window
+		while (current <= this.to) {
+			const tickDate = new Date(current);
+			const { align, adjustedTs } = getAlignmentAndTimestamp(tickDate);
+			
+			ticks.push({
+				ts: adjustedTs,
+				tstr: '12:00',
+				x: this.scale(adjustedTs),
+				label: formatDayLabel(current),
+				align: align
+			});
+			current.setDate(current.getDate() + 1);
+		}
+
+		return ticks;
+	}
+
+	/**
+	 * Add x coordinate to a TimeTick based on its timestamp
+	 * Returns a new TimeTick object with x property set
+	 */
+	addXToTimeTick(tick: TimeTick): TimeTick {
+		return {
+			...tick,
+			x: this.scale(tick.ts)
+		};
+	}
+
+	/**
+	 * Add x coordinates to a TimeWindow's from and to ticks
+	 * Returns a new TimeWindow object with x properties set on both ticks
+	 */
+	addXToTimeWindow(window: TimeWindow): TimeWindow {
+		return {
+			...window,
+			from: this.addXToTimeTick(window.from),
+			to: this.addXToTimeTick(window.to)
+		};
 	}
 }
 
