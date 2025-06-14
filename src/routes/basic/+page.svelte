@@ -16,6 +16,7 @@
 		precipitationScale,
 		solarMarkers,
 		solarScale,
+		config,
 		location,
 		error
 	} = data;
@@ -200,9 +201,9 @@
 						x={marker.x}
 						y={marker.y + 80 + (marker.max ? -5 : 5)}
 						font-family="sans-serif"
-						font-size={6}
+						font-size={config?.fontSize?.temperatureExtremes || 8}
 						font-weight="bold"
-						fill={marker.max ? '#dc2626' : '#2563eb'}
+						fill={marker.max ? (config?.colors?.temperatureMax || '#dc2626') : (config?.colors?.temperatureMin || '#2563eb')}
 						stroke="white"
 						stroke-width="2"
 						paint-order="stroke fill"

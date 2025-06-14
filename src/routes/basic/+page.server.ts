@@ -1,11 +1,15 @@
 import Timeline from '$lib/Timeline';
 import WeatherData from '$lib/WeatherData';
 import SolarData from '$lib/SolarData';
+import { loadConfig } from '$lib/config/ConfigLoader';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
 	try {
+		// Load application configuration
+		const config = loadConfig();
+		
 		// Read environment variables
 		const latitude = parseFloat(env.LAT || '63.4305'); // Default: Trondheim
 		const longitude = parseFloat(env.LON || '10.3951');
@@ -47,6 +51,7 @@ export const load: PageServerLoad = async () => {
 			},
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			...solarResult, // solarMarkers, solarScale
+			config: config.visualization, // Pass visualization config to client
 			location: {
 				latitude,
 				longitude

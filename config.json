@@ -1,0 +1,22 @@
+{
+	"visualization": {
+		"fontSize": {
+			"temperatureExtremes": 8,
+			"hourTicks": 6,
+			"dayLabels": 12,
+			"scaleLabels": 8
+		},
+		"colors": {
+			"temperatureMax": "#dc2626",
+			"temperatureMin": "#2563eb",
+			"temperatureLine": "#dc2626",
+			"solar": "#f59e0b",
+			"precipitation": "rgba(54, 162, 235, 0.7)"
+		},
+		"layout": {
+			"temperatureHeight": 100,
+			"precipitationHeight": 60,
+			"solarHeight": 80
+		}
+	}
+}
