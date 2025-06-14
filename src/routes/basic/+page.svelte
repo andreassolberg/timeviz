@@ -6,8 +6,17 @@
 	export let data: PageData;
 
 	// Destructure data from server
-	const { timeline, weatherData, temperatureMarkers, valueScale, location, error } = data;
-	const { hourTicks, dayLabelTicks, nowX } = timeline;
+	const {
+		timeline,
+		weatherData,
+		temperatureMarkers,
+		temperatureScale,
+		precipitationMarkers,
+		precipitationScale,
+		location,
+		error
+	} = data;
+	const { hourTicks, dayLabelTicks, nowX, hourWidth } = timeline;
 
 	// Generate SVG path using d3.line with smooth curves
 	$: temperaturePath =
@@ -29,8 +38,8 @@
 
 	<SVGViz width={timeline.width} height={400} full="width" margin={10}>
 		<!-- Value scale grid lines - first -->
-		{#if temperatureMarkers && valueScale}
-			{#each valueScale.rowMarkers as marker}
+		{#if temperatureMarkers && temperatureScale}
+			{#each temperatureScale.rowMarkers as marker}
 				<line
 					x1={0}
 					y1={marker.y + 80}
@@ -78,7 +87,7 @@
 		{/each}
 
 		<!-- Temperature path - last -->
-		{#if temperatureMarkers && valueScale && temperaturePath}
+		{#if temperatureMarkers && temperatureScale && temperaturePath}
 			<path
 				d={temperaturePath}
 				fill="none"
@@ -88,9 +97,53 @@
 			/>
 		{/if}
 
+		<!-- Precipitation bars for each hour -->
+		{#if precipitationMarkers && precipitationMarkers.length > 0}
+			{#each precipitationMarkers as marker}
+				{#if marker.precipitation && marker.precipitation > 0 && marker.x !== undefined && marker.y !== undefined}
+					<rect
+						x={marker.x}
+						y={200 - marker.y}
+						width={hourWidth}
+						height={marker.y}
+						fill="rgba(54, 162, 235, 0.7)"
+						opacity="0.8"
+					>
+						<title>{marker.tstr}: {marker.precipitation}mm</title>
+					</rect>
+				{/if}
+			{/each}
+		{/if}
+
+		<!-- Precipitation grid lines and labels -->
+		{#if precipitationScale && precipitationScale.rowMarkers.length > 0}
+			{#each precipitationScale.rowMarkers as marker}
+				<line
+					x1={0}
+					y1={200 - marker.y}
+					x2={timeline.width}
+					y2={200 - marker.y}
+					stroke="#e3f2fd"
+					stroke-width="1"
+					stroke-dasharray="2,2"
+				/>
+				<text
+					x={timeline.width - 50}
+					y={200 - marker.y}
+					font-family="sans-serif"
+					font-size="8"
+					fill="#1976d2"
+					dominant-baseline="central"
+					text-anchor="start"
+				>
+					{marker.value}mm
+				</text>
+			{/each}
+		{/if}
+
 		<!-- Row marker text labels - very last -->
-		{#if temperatureMarkers && valueScale}
-			{#each valueScale.rowMarkers as marker}
+		{#if temperatureMarkers && temperatureScale}
+			{#each temperatureScale.rowMarkers as marker}
 				<text
 					x={nowX}
 					y={marker.y + 80}

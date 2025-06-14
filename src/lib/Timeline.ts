@@ -227,6 +227,18 @@ class Timeline {
 	getNowX(): number {
 		return this.scale(this.now);
 	}
+
+	/**
+	 * Get the width of one hour in pixels
+	 * @returns The width in pixels that represents one hour on the timeline
+	 */
+	getHourWidth(): number {
+		// Calculate width by getting x-coordinates for two consecutive hours
+		const now = new Date();
+		const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+		
+		return this.scale(oneHourLater) - this.scale(now);
+	}
 }
 
 export default Timeline;

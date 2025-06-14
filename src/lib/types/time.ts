@@ -16,8 +16,25 @@ export interface TimeTick {
 	/** Optional X position in the visualization */
 	x?: number;
 	
+	/** Optional Y position in the visualization */
+	y?: number;
+	
 	/** Optional label for this tick */
 	label?: string;
+	
+	/** Weather data properties */
+	temperature?: number;
+	humidity?: number;
+	windSpeed?: number;
+	
+	/** Precipitation data properties */
+	precipitation?: number;           // mm per time
+	precipitationMax?: number;        // maks mm per time
+	precipitationMin?: number;        // min mm per time
+	
+	/** Data source type */
+	dataType?: 'forecast' | 'historical';
+	station?: string;
 	
 	/** Allow additional properties to be added */
 	[key: string]: any;

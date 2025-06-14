@@ -1,5 +1,5 @@
 import Timeline from '$lib/Timeline';
-import TemperatureData from '$lib/TemperatureData';
+import WeatherData from '$lib/WeatherData';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -14,29 +14,28 @@ export const load: PageServerLoad = async () => {
 		// Create timeline
 		const timeline = new Timeline(48, 48); // 48 hours back and forward
 
-		// Create temperature data handler
-		const temperatureData = new TemperatureData(
-			timeline,
+		// Create unified weather data handler
+		const weatherData = new WeatherData(timeline, {
 			latitude,
 			longitude,
 			frostClientId,
 			userAgent,
-			100 // height
-		);
+			temperatureHeight: 100,
+			precipitationHeight: 60
+		});
 
-		// Fetch and prepare temperature data
-		const { weatherData, temperatureMarkers, valueScale } = await temperatureData.prepare();
+		// Fetch and prepare all weather data in single operation
+		const result = await weatherData.prepare();
 
 		return {
 			timeline: {
 				width: timeline.width,
 				hourTicks: timeline.getHourTicks(),
 				dayLabelTicks: timeline.getDayLabelTicks(),
-				nowX: timeline.getNowX()
+				nowX: timeline.getNowX(),
+				hourWidth: timeline.getHourWidth()
 			},
-			weatherData,
-			temperatureMarkers,
-			valueScale,
+			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			location: {
 				latitude,
 				longitude
@@ -53,13 +52,23 @@ export const load: PageServerLoad = async () => {
 				width: timeline.width,
 				hourTicks: timeline.getHourTicks(),
 				dayLabelTicks: timeline.getDayLabelTicks(),
-				nowX: timeline.getNowX()
+				nowX: timeline.getNowX(),
+				hourWidth: timeline.getHourWidth()
 			},
 			weatherData: [],
 			temperatureMarkers: [],
-			valueScale: {
+			temperatureScale: {
 				height: 100,
-				rowMarkers: []
+				rowMarkers: [],
+				min: 0,
+				max: 20
+			},
+			precipitationMarkers: [],
+			precipitationScale: {
+				height: 60,
+				rowMarkers: [],
+				min: 0,
+				max: 5
 			},
 			location: {
 				latitude: parseFloat(env.LAT || '63.4305'),

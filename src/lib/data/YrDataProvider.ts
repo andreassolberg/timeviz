@@ -9,12 +9,17 @@ interface WeatherObservation {
 	temperature: number;
 	humidity?: number;
 	windSpeed?: number;
+	// TIMEBASERT NEDBØR:
+	precipitationAmount?: number;     // mm denne timen
+	precipitationAmountMax?: number;  // maks mm denne timen  
+	precipitationAmountMin?: number;  // min mm denne timen
 }
 
 interface FrostObservation {
 	time: string;
 	temperature: number;
 	station: string;
+	precipitationAmount?: number;     // mm denne timen
 }
 
 interface LocationforecastEntry {
@@ -27,6 +32,13 @@ interface LocationforecastEntry {
 				wind_speed: number;
 			};
 		};
+		next_1_hours?: {
+			details: {
+				precipitation_amount?: number;
+				precipitation_amount_max?: number;
+				precipitation_amount_min?: number;
+			};
+		};
 	};
 }
 
@@ -34,6 +46,7 @@ interface FrostApiEntry {
 	referenceTime: string;
 	sourceId: string;
 	observations: Array<{
+		elementId: string;
 		value: number;
 	}>;
 }
@@ -85,12 +98,16 @@ export class YrDataProvider {
 
 			const data = await response.json();
 
-			// Ekstraherer alle temperaturdata (opptil 9 dager)
+			// Ekstraherer alle værdata inkludert nedbør (opptil 9 dager)
 			let timeseries = data.properties.timeseries.map((entry: LocationforecastEntry) => ({
 				time: entry.time,
 				temperature: entry.data.instant.details.air_temperature,
 				humidity: entry.data.instant.details.relative_humidity,
-				windSpeed: entry.data.instant.details.wind_speed
+				windSpeed: entry.data.instant.details.wind_speed,
+				// TIMEBASERT NEDBØR FRA next_1_hours:
+				precipitationAmount: entry.data.next_1_hours?.details?.precipitation_amount,
+				precipitationAmountMax: entry.data.next_1_hours?.details?.precipitation_amount_max,
+				precipitationAmountMin: entry.data.next_1_hours?.details?.precipitation_amount_min
 			}));
 
 			// Filter basert på tidsvindu hvis oppgitt
@@ -140,7 +157,7 @@ export class YrDataProvider {
 		const endISO = endTime.toISOString();
 
 		// Frost API URL for observasjoner - bruker nærmeste stasjon
-		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature`;
+		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount P1H)`;
 
 		try {
 			const response = await fetch(url, {
@@ -156,11 +173,18 @@ export class YrDataProvider {
 			const data = await response.json();
 
 			// Behandle data og filtrer basert på timeWindow hvis oppgitt
-			let temperatures = data.data.map((observation: FrostApiEntry) => ({
-				time: observation.referenceTime,
-				temperature: observation.observations[0].value,
-				station: observation.sourceId
-			}));
+			let temperatures = data.data.map((observation: FrostApiEntry) => {
+				// Frost API kan returnere flere observasjoner per tidspunkt
+				const tempObs = observation.observations.find(obs => obs.elementId === 'air_temperature');
+				const precipObs = observation.observations.find(obs => obs.elementId === 'sum(precipitation_amount P1H)');
+				
+				return {
+					time: observation.referenceTime,
+					temperature: tempObs?.value,
+					precipitationAmount: precipObs?.value,
+					station: observation.sourceId
+				};
+			});
 
 			// Ekstra filtrering hvis timeWindow er oppgitt (for å være sikker)
 			if (timeWindow) {
@@ -228,6 +252,9 @@ export class YrDataProvider {
 				temperature: forecast.temperature,
 				humidity: forecast.humidity,
 				windSpeed: forecast.windSpeed,
+				precipitation: forecast.precipitationAmount,
+				precipitationMax: forecast.precipitationAmountMax,
+				precipitationMin: forecast.precipitationAmountMin,
 				dataType: 'forecast'
 			}));
 	}
@@ -248,6 +275,7 @@ export class YrDataProvider {
 				ts: new Date(obs.time),
 				tstr: this.formatTime(new Date(obs.time)),
 				temperature: obs.temperature,
+				precipitation: obs.precipitationAmount,
 				station: obs.station,
 				dataType: 'historical'
 			}));

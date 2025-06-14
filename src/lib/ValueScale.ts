@@ -16,13 +16,14 @@ export class ValueScale {
 	 * @param minValue - Minimum input value (e.g., -10 for temperature)
 	 * @param maxValue - Maximum input value (e.g., 30 for temperature)
 	 * @param height - Height of the scale area in pixels
+	 * @param clamp - Whether to clamp values outside domain (default: true)
 	 */
-	constructor(minValue: number, maxValue: number, height: number) {
+	constructor(minValue: number, maxValue: number, height: number, clamp: boolean = true) {
 		// Create d3 linear scale
 		// Y coordinates: 0 is at top, height is at bottom
 		// maxValue -> 0 (top)
 		// minValue -> height (bottom)
-		this.linearScale = scaleLinear().domain([minValue, maxValue]).range([height, 0]).clamp(true); // Clamp values outside domain
+		this.linearScale = scaleLinear().domain([minValue, maxValue]).range([height, 0]).clamp(clamp);
 	}
 
 	/**
@@ -33,6 +34,22 @@ export class ValueScale {
 	 */
 	scale(value: number): number {
 		return parseFloat(this.linearScale(value).toFixed(2));
+	}
+
+	/**
+	 * Get the domain (input range) of this scale
+	 * @returns [minValue, maxValue]
+	 */
+	getDomain(): [number, number] {
+		return this.linearScale.domain() as [number, number];
+	}
+
+	/**
+	 * Get the range (output range) of this scale  
+	 * @returns [maxY, minY] (inverted for SVG coordinates)
+	 */
+	getRange(): [number, number] {
+		return this.linearScale.range() as [number, number];
 	}
 
 	/**
