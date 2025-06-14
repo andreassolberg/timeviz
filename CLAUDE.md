@@ -19,6 +19,7 @@ npm run check        # Type-check the codebase
 npm run check:watch  # Type-check in watch mode
 npm run lint         # Run prettier and eslint checks
 npm run format       # Auto-format code with prettier
+npm run cloc         # Count lines of code in src directory
 ```
 
 ## Architecture
