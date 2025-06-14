@@ -9,6 +9,9 @@ interface WeatherObservation {
 	temperature: number;
 	humidity?: number;
 	windSpeed?: number;
+	uvIndex?: number;
+	uv?: number;
+	weatherSymbol?: string;
 	// TIMEBASERT NEDBØR:
 	precipitationAmount?: number;     // mm denne timen
 	precipitationAmountMax?: number;  // maks mm denne timen  
@@ -30,9 +33,13 @@ interface LocationforecastEntry {
 				air_temperature: number;
 				relative_humidity: number;
 				wind_speed: number;
+				ultraviolet_index_clear_sky?: number;
 			};
 		};
 		next_1_hours?: {
+			summary?: {
+				symbol_code?: string;
+			};
 			details: {
 				precipitation_amount?: number;
 				precipitation_amount_max?: number;
@@ -83,7 +90,7 @@ export class YrDataProvider {
 	 * @param timeWindow - Optional time window to filter data, if not provided returns all data
 	 */
 	async getWeatherForecast(timeWindow?: TimeWindow): Promise<WeatherObservation[]> {
-		const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${this.latitude}&lon=${this.longitude}`;
+		const url = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${this.latitude}&lon=${this.longitude}`;
 
 		try {
 			const response = await fetch(url, {
@@ -104,6 +111,9 @@ export class YrDataProvider {
 				temperature: entry.data.instant.details.air_temperature,
 				humidity: entry.data.instant.details.relative_humidity,
 				windSpeed: entry.data.instant.details.wind_speed,
+				uvIndex: entry.data.instant.details.ultraviolet_index_clear_sky,
+				uv: entry.data.instant.details.ultraviolet_index_clear_sky ? Math.round(entry.data.instant.details.ultraviolet_index_clear_sky) : undefined,
+				weatherSymbol: entry.data.next_1_hours?.summary?.symbol_code,
 				// TIMEBASERT NEDBØR FRA next_1_hours:
 				precipitationAmount: entry.data.next_1_hours?.details?.precipitation_amount,
 				precipitationAmountMax: entry.data.next_1_hours?.details?.precipitation_amount_max,
@@ -252,6 +262,9 @@ export class YrDataProvider {
 				temperature: forecast.temperature,
 				humidity: forecast.humidity,
 				windSpeed: forecast.windSpeed,
+				uvIndex: forecast.uvIndex,
+				uv: forecast.uv,
+				weatherSymbol: forecast.weatherSymbol,
 				precipitation: forecast.precipitationAmount,
 				precipitationMax: forecast.precipitationAmountMax,
 				precipitationMin: forecast.precipitationAmountMin,

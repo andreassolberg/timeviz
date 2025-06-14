@@ -26,6 +26,9 @@ export interface TimeTick {
 	temperature?: number;
 	humidity?: number;
 	windSpeed?: number;
+	uvIndex?: number;
+	uv?: number;
+	weatherSymbol?: string;
 	
 	/** Precipitation data properties */
 	precipitation?: number;           // mm per time

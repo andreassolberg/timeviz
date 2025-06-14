@@ -136,15 +136,15 @@ class Timeline {
 	}
 
 	/**
-	 * Get day label ticks for all 15:00 (3 PM) slots within the time window
+	 * Get day label ticks for all 13:00 (1 PM) slots within the time window
 	 * Returns TimeTick array with pretty formatted day labels
 	 */
 	getDayLabelTicks(): TimeTick[] {
 		const ticks: TimeTick[] = [];
 
-		// Start from the first 3 PM at or after 'from'
+		// Start from the first 1 PM at or after 'from'
 		const current = new Date(this.from);
-		current.setHours(15, 0, 0, 0);
+		current.setHours(13, 0, 0, 0);
 
 		// If we're before the window start, move to next day
 		if (current < this.from) {
@@ -196,14 +196,14 @@ class Timeline {
 			});
 		};
 
-		// Add tick for each 3 PM within the window
+		// Add tick for each 1 PM within the window
 		while (current <= this.to) {
 			const tickDate = new Date(current);
 			const { align, adjustedTs } = getAlignmentAndTimestamp(tickDate);
 			
 			ticks.push({
 				ts: adjustedTs,
-				tstr: '15:00',
+				tstr: '13:00',
 				x: this.scale(adjustedTs),
 				label: formatDayLabel(current),
 				align: align

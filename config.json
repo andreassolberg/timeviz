@@ -4,7 +4,8 @@
 			"temperatureExtremes": 8,
 			"hourTicks": 6,
 			"dayLabels": 12,
-			"scaleLabels": 8
+			"scaleLabels": 8,
+			"uvIndex": 10
 		},
 		"colors": {
 			"temperatureMax": "#dc2626",

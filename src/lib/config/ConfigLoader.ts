@@ -11,6 +11,7 @@ export interface AppConfig {
 			hourTicks: number;
 			dayLabels: number;
 			scaleLabels: number;
+			uvIndex: number;
 		};
 		colors: {
 			temperatureMax: string;
@@ -40,7 +41,8 @@ const DEFAULT_CONFIG: AppConfig = {
 			temperatureExtremes: 8,
 			hourTicks: 6,
 			dayLabels: 12,
-			scaleLabels: 8
+			scaleLabels: 8,
+			uvIndex: 6
 		},
 		colors: {
 			temperatureMax: '#dc2626',

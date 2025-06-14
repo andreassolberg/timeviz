@@ -1,9 +1,15 @@
 <script lang="ts">
 	import SVGViz from '$lib/components/SVGViz.svelte';
 	import { line, curveMonotoneX } from 'd3-shape';
+	import { scaleThreshold } from 'd3-scale';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
+
+	// UV Index color scale using d3.scaleThreshold
+	const uvColorScale = scaleThreshold<number, string>()
+		.domain([3, 6, 8, 11]) // Breakpoints: moderate, high, very high, extreme
+		.range(['#059669', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']); // darker green, orange, red, dark red, purple
 
 	// Destructure data from server
 	const {
@@ -117,14 +123,17 @@
 		{#each dayLabelTicks as dayTick}
 			<text
 				x={dayTick.x}
-				y={30}
+				y={40}
 				font-family="sans-serif"
-				font-size={12}
+				font-size={10}
 				text-anchor={dayTick.align}
 				fill="#000"
 				dominant-baseline="central">{dayTick.label}</text
 			>
 		{/each}
+
+		<!-- Horizontal line at y=70 -->
+		<line x1={0} y1={70} x2={timeline.width} y2={70} stroke="#555" stroke-width={0.5} />
 
 		<!-- Hour tick lines -->
 		{#each hourTicks as tick}
@@ -159,6 +168,47 @@
 			/>
 		{/if}
 
+		<!-- Temperature marker points with UV and weather symbol data -->
+		{#if temperatureMarkers && temperatureScale}
+			{#each temperatureMarkers as marker}
+				{#if marker.x !== undefined && marker.y !== undefined}
+					<!-- UV Index text -->
+					{#if marker.uv !== undefined && marker.uv !== null && marker.uv >= 3}
+						<text
+							x={marker.x}
+							y={marker.y + 90}
+							font-family="sans-serif"
+							font-size={config?.fontSize?.uvIndex || 6}
+							font-weight="bold"
+							fill={uvColorScale(marker.uv)}
+							stroke="white"
+							stroke-width="2"
+							paint-order="stroke fill"
+							text-anchor="middle"
+							dominant-baseline="central"
+						>
+							{marker.uv}
+						</text>
+					{/if}
+
+					<!-- Weather Symbol text -->
+					{#if marker.weatherSymbol}
+						<text
+							x={marker.x}
+							y={marker.y + 120}
+							font-family="sans-serif"
+							font-size="6"
+							fill="#059669"
+							text-anchor="middle"
+							dominant-baseline="central"
+						>
+							{marker.weatherSymbol}
+						</text>
+					{/if}
+				{/if}
+			{/each}
+		{/if}
+
 		<!-- Energy price bars for each hour -->
 		<g transform="translate(0, 350)">
 			{#if energyMarkers && energyMarkers.length > 0}
@@ -177,20 +227,15 @@
 					{:else}
 						<!-- Debug rectangle for missing data -->
 						{#if marker.x !== undefined}
-							<rect
-								x={marker.x}
-								y={-10}
-								width={hourWidth}
-								height={10}
-								fill="red"
-								opacity="0.3"
-							>
-								<title>Missing data: {JSON.stringify({
-									nokPerKwh: marker.nokPerKwh,
-									x: marker.x,
-									y: marker.y,
-									index: i
-								})}</title>
+							<rect x={marker.x} y={-10} width={hourWidth} height={10} fill="red" opacity="0.3">
+								<title
+									>Missing data: {JSON.stringify({
+										nokPerKwh: marker.nokPerKwh,
+										x: marker.x,
+										y: marker.y,
+										index: i
+									})}</title
+								>
 							</rect>
 						{/if}
 					{/if}
@@ -236,7 +281,7 @@
 				{#if marker.precipitation && marker.precipitation > 0 && marker.x !== undefined && marker.y !== undefined}
 					<rect
 						x={marker.x}
-						y={200 - marker.y}
+						y={70}
 						width={hourWidth}
 						height={marker.y}
 						fill="rgba(54, 162, 235, 0.7)"

@@ -1,9 +1,15 @@
 <script lang="ts">
 	import SVGViz from '$lib/components/SVGViz.svelte';
 	import { line, curveMonotoneX } from 'd3-shape';
+	import { scaleThreshold } from 'd3-scale';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
+
+	// UV Index color scale using d3.scaleThreshold
+	const uvColorScale = scaleThreshold<number, string>()
+		.domain([3, 6, 8, 11])  // Breakpoints: moderate, high, very high, extreme
+		.range(['#059669', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']); // darker green, orange, red, dark red, purple
 
 	// Generate SVG path using d3.line with smooth curves
 	$: temperaturePath =
@@ -74,6 +80,40 @@
 							>
 								<title>{marker.tstr}: {marker.temperature}°C</title>
 							</circle>
+							
+							<!-- UV Index text -->
+							{#if marker.uv !== undefined && marker.uv !== null && marker.uv >= 3}
+								<text
+									x={marker.x}
+									y={marker.y + 45}
+									font-family="sans-serif"
+									font-size="8"
+									font-weight="bold"
+									fill={uvColorScale(marker.uv)}
+									stroke="white"
+									stroke-width="2"
+									paint-order="stroke fill"
+									text-anchor="middle"
+									dominant-baseline="central"
+								>
+									{marker.uv}
+								</text>
+							{/if}
+							
+							<!-- Weather Symbol text -->
+							{#if marker.weatherSymbol}
+								<text
+									x={marker.x}
+									y={marker.y + 55}
+									font-family="sans-serif"
+									font-size="8"
+									fill="#059669"
+									text-anchor="middle"
+									dominant-baseline="central"
+								>
+									{marker.weatherSymbol}
+								</text>
+							{/if}
 						{/each}
 					</SVGViz>
 				</section>
