@@ -120,7 +120,7 @@
 		{#each hourTicks as tick}
 			<text
 				x={tick.x}
-				y={tick.now ? 58 : 65}
+				y={65}
 				font-family="sans-serif"
 				font-size={6}
 				text-anchor="middle"
@@ -133,7 +133,7 @@
 				y1={70}
 				x2={tick.x}
 				y2={380}
-				stroke={tick.now ? 'red' : '#eee'}
+				stroke={tick.now ? '#000' : '#eee'}
 				stroke-width={1}
 			/>
 		{/each}
@@ -203,7 +203,9 @@
 						font-family="sans-serif"
 						font-size={config?.fontSize?.temperatureExtremes || 8}
 						font-weight="bold"
-						fill={marker.max ? (config?.colors?.temperatureMax || '#dc2626') : (config?.colors?.temperatureMin || '#2563eb')}
+						fill={marker.max
+							? config?.colors?.temperatureMax || '#dc2626'
+							: config?.colors?.temperatureMin || '#2563eb'}
 						stroke="white"
 						stroke-width="2"
 						paint-order="stroke fill"

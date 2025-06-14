@@ -48,7 +48,7 @@ class Timeline {
 		};
 	}
 
-	getHourTicks(): TimeTick[] {
+	getHourTicks(hours: number[] = [7, 12, 17, 23]): TimeTick[] {
 		const ticks: TimeTick[] = [];
 
 		// Helper function to format time as HH or HH:mm
@@ -61,19 +61,36 @@ class Timeline {
 			return `${hours}`;
 		};
 
-		// Start from the beginning of the hour at 'from'
-		const current = new Date(this.from);
-		current.setMinutes(0, 0, 0);
+		// Start from the beginning of the timeline
+		const startDate = new Date(this.from);
+		startDate.setHours(0, 0, 0, 0);
 
-		// Add tick for each hour
-		while (current <= this.to) {
-			ticks.push({
-				ts: new Date(current),
-				tstr: formatTime(current),
-				x: this.scale(current),
-				now: false
-			});
-			current.setHours(current.getHours() + 1);
+		// Process each day in the timeline
+		const currentDay = new Date(startDate);
+		const twoHoursMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+		
+		while (currentDay <= this.to) {
+			// For each day, create ticks for each specified hour
+			for (const hour of hours) {
+				const tickTime = new Date(currentDay);
+				tickTime.setHours(hour, 0, 0, 0);
+				
+				// Calculate time difference from now
+				const timeDiffFromNow = Math.abs(tickTime.getTime() - this.now.getTime());
+				
+				// Only add tick if it's within the timeline window and not within 2 hours of now
+				if (tickTime >= this.from && tickTime <= this.to && timeDiffFromNow >= twoHoursMs) {
+					ticks.push({
+						ts: new Date(tickTime),
+						tstr: formatTime(tickTime),
+						x: this.scale(tickTime),
+						now: false
+					});
+				}
+			}
+			
+			// Move to next day
+			currentDay.setDate(currentDay.getDate() + 1);
 		}
 
 		// Add special tick for "now"
@@ -256,7 +273,6 @@ class Timeline {
 		// Process the entire timeline
 		while (current < this.to) {
 			const currentHour = current.getHours();
-			const currentDate = new Date(current);
 			
 			// Determine if we're starting in day or night
 			const isDay = currentHour >= dayStartHour && currentHour < nightStartHour;
