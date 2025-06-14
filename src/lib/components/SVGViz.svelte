@@ -1,38 +1,52 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
+	/**
+	 * SVGViz Component
+	 *
+	 * A flexible SVG container component that supports responsive sizing and margins.
+	 *
+	 * @prop width - The base width of the SVG viewBox (must be positive)
+	 * @prop height - The base height of the SVG viewBox (must be positive)
+	 * @prop full - Optional responsive mode: 'width' fills viewport width, 'height' fills viewport height
+	 * @prop margin - Optional margin added to all sides of the viewBox (defaults to 0)
+	 * @prop children - SVG content to render inside the container
+	 */
 	interface Props {
-		width: number | string;
-		height: number | string;
+		width: number;
+		height: number;
 		full?: 'width' | 'height' | null;
 		margin?: number;
+		children: Snippet;
 	}
 
-	let { width, height, full = null, margin = 0 }: Props = $props();
+	let { width, height, full = null, margin = 0, children }: Props = $props();
 
-	let svgWidth = width;
-	let svgHeight = height;
-
-	if (full === 'width') {
-		svgWidth = '100vw';
-		svgHeight = 'auto';
-	} else if (full === 'height') {
-		svgWidth = 'auto';
-		svgHeight = '100vh';
+	// Validate inputs
+	if (width <= 0 || height <= 0) {
+		throw new Error('SVGViz: width and height must be positive numbers');
 	}
 
-	const numWidth = Number(width);
-	const numHeight = Number(height);
-	const viewBoxX = -margin;
-	const viewBoxY = -margin;
-	const viewBoxWidth = numWidth + 2 * margin;
-	const viewBoxHeight = numHeight + 2 * margin;
+	// Reactive SVG dimensions based on full parameter
+	let svgWidth = $derived(full === 'width' ? '100vw' : full === 'height' ? 'auto' : width);
+
+	let svgHeight = $derived(full === 'height' ? '100vh' : full === 'width' ? 'auto' : height);
+
+	// Reactive viewBox calculations with safe margin handling
+	let safeMargin = $derived(Math.max(0, margin)); // Ensure non-negative margin
+	let viewBoxX = $derived(-safeMargin);
+	let viewBoxY = $derived(-safeMargin);
+	let viewBoxWidth = $derived(width + 2 * safeMargin);
+	let viewBoxHeight = $derived(height + 2 * safeMargin);
+	let viewBox = $derived(`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
 </script>
 
 <svg
 	width={svgWidth}
 	height={svgHeight}
-	viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
+	{viewBox}
 	preserveAspectRatio="xMidYMid meet"
 	style="display: block; max-width: 100%; overflow: visible;"
 >
-	<slot />
+	{@render children()}
 </svg>
