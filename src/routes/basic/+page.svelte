@@ -222,7 +222,7 @@
 		{#if temperatureMarkers && temperatureScale}
 			{#each temperatureScale.rowMarkers as marker}
 				<text
-					x={nowX}
+					x={10}
 					y={marker.y + 80}
 					font-family="sans-serif"
 					font-size={8}
@@ -231,7 +231,7 @@
 					stroke-width="3"
 					paint-order="stroke fill"
 					dominant-baseline="central"
-					text-anchor="middle"
+					text-anchor="start"
 				>
 					{marker.value}°C
 				</text>
