@@ -1,5 +1,6 @@
 import Timeline from '$lib/Timeline';
 import WeatherData from '$lib/WeatherData';
+import SolarData from '$lib/SolarData';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -27,6 +28,14 @@ export const load: PageServerLoad = async () => {
 		// Fetch and prepare all weather data in single operation
 		const result = await weatherData.prepare();
 
+		// Create and prepare solar data
+		const solarData = new SolarData(timeline, {
+			latitude,
+			longitude,
+			solarHeight: 20 // Height for solar visualization area
+		});
+		const solarResult = await solarData.prepare();
+
 		return {
 			timeline: {
 				width: timeline.width,
@@ -37,6 +46,7 @@ export const load: PageServerLoad = async () => {
 				dayNightMarkers: timeline.getDayNightMarkers(6, 22) // Dag fra 06:00 til 22:00
 			},
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
+			...solarResult, // solarMarkers, solarScale
 			location: {
 				latitude,
 				longitude
@@ -70,6 +80,13 @@ export const load: PageServerLoad = async () => {
 				rowMarkers: [],
 				min: 0,
 				max: 5
+			},
+			solarMarkers: [],
+			solarScale: {
+				height: 80,
+				rowMarkers: [],
+				min: 0,
+				max: 90
 			},
 			location: {
 				latitude: parseFloat(env.LAT || '63.4305'),

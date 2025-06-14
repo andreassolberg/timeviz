@@ -13,6 +13,8 @@
 		temperatureScale,
 		precipitationMarkers,
 		precipitationScale,
+		solarMarkers,
+		solarScale,
 		location,
 		error
 	} = data;
@@ -25,6 +27,28 @@
 					.x((d) => d.x)
 					.y((d) => d.y)
 					.curve(curveMonotoneX)(temperatureMarkers) || ''
+			: '';
+
+	// Generate solar altitude path as filled area
+	$: solarPath =
+		solarMarkers && solarMarkers.length > 0 && solarScale
+			? (() => {
+					// Create the top curve
+					const topPath =
+						line<any>()
+							.x((d) => d.x)
+							.y((d) => d.y)
+							.curve(curveMonotoneX)(solarMarkers) || '';
+
+					if (!topPath) return '';
+
+					// Add baseline to close the area (at scale height since we flip Y)
+					const firstPoint = solarMarkers[0];
+					const lastPoint = solarMarkers[solarMarkers.length - 1];
+					const baseline = solarScale.height;
+
+					return `${topPath} L ${lastPoint.x} ${baseline} L ${firstPoint.x} ${baseline} Z`;
+				})()
 			: '';
 </script>
 
@@ -51,7 +75,7 @@
 			{/each}
 		{/if}
 
-		<!-- Value scale grid lines - second -->
+		<!-- Temperature scale grid lines -->
 		{#if temperatureMarkers && temperatureScale}
 			{#each temperatureScale.rowMarkers as marker}
 				<line
@@ -65,11 +89,23 @@
 			{/each}
 		{/if}
 
+		<!-- Solar altitude path -->
+		{#if solarMarkers && solarScale && solarPath}
+			<path
+				d={solarPath}
+				fill="#f59e0b"
+				stroke="#f59e0b"
+				opacity={0.3}
+				stroke-width={0}
+				transform="translate(0, 50) "
+			/>
+		{/if}
+
 		<!-- Day labels at the top -->
 		{#each dayLabelTicks as dayTick}
 			<text
 				x={dayTick.x}
-				y={20}
+				y={30}
 				font-family="sans-serif"
 				font-size={12}
 				text-anchor={dayTick.align}
@@ -82,7 +118,7 @@
 		{#each hourTicks as tick}
 			<text
 				x={tick.x}
-				y={tick.now ? 40 : 50}
+				y={tick.now ? 58 : 65}
 				font-family="sans-serif"
 				font-size={6}
 				text-anchor="middle"
@@ -155,7 +191,7 @@
 			{/each}
 		{/if}
 
-		<!-- Row marker text labels - very last -->
+		<!-- Temperature scale text labels - very last -->
 		{#if temperatureMarkers && temperatureScale}
 			{#each temperatureScale.rowMarkers as marker}
 				<text
