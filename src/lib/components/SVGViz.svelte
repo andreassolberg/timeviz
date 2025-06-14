@@ -32,6 +32,7 @@
 	height={svgHeight}
 	viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
 	preserveAspectRatio="xMidYMid meet"
+	style="display: block; max-width: 100%; overflow: visible;"
 >
 	<slot />
 </svg>
