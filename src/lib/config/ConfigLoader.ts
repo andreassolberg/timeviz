@@ -23,6 +23,10 @@ export interface AppConfig {
 			temperatureHeight: number;
 			precipitationHeight: number;
 			solarHeight: number;
+			energyHeight: number;
+		};
+		scales?: {
+			maxEnergyPrice: number;
 		};
 	};
 }
@@ -48,7 +52,11 @@ const DEFAULT_CONFIG: AppConfig = {
 		layout: {
 			temperatureHeight: 100,
 			precipitationHeight: 60,
-			solarHeight: 80
+			solarHeight: 80,
+			energyHeight: 80
+		},
+		scales: {
+			maxEnergyPrice: 2
 		}
 	}
 };
@@ -108,6 +116,13 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 			merged.visualization.layout = {
 				...merged.visualization.layout,
 				...userConfig.visualization.layout
+			};
+		}
+		
+		if (userConfig.visualization.scales) {
+			merged.visualization.scales = {
+				...merged.visualization.scales,
+				...userConfig.visualization.scales
 			};
 		}
 	}

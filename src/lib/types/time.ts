@@ -32,8 +32,14 @@ export interface TimeTick {
 	precipitationMax?: number;        // maks mm per time
 	precipitationMin?: number;        // min mm per time
 	
+	/** Energy price data properties */
+	nokPerKwh?: number;               // NOK per kWh
+	eurPerKwh?: number;               // EUR per kWh
+	exchangeRate?: number;            // NOK/EUR exchange rate
+	zone?: string;                    // Energy price zone (NO1-NO5)
+	
 	/** Data source type */
-	dataType?: 'forecast' | 'historical';
+	dataType?: 'forecast' | 'historical' | 'solar' | 'energy';
 	station?: string;
 	
 	/** Allow additional properties to be added */

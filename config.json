@@ -16,7 +16,11 @@
 		"layout": {
 			"temperatureHeight": 100,
 			"precipitationHeight": 60,
-			"solarHeight": 80
+			"solarHeight": 80,
+			"energyHeight": 80
+		},
+		"scales": {
+			"maxEnergyPrice": 1
 		}
 	}
 }

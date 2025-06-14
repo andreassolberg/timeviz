@@ -1,6 +1,8 @@
 import Timeline from '$lib/Timeline';
 import WeatherData from '$lib/WeatherData';
 import SolarData from '$lib/SolarData';
+import EnergyData from '$lib/EnergyData';
+import { PriceZone } from '$lib/data/EnergyPricesProvider';
 import { loadConfig } from '$lib/config/ConfigLoader';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
@@ -9,12 +11,13 @@ export const load: PageServerLoad = async () => {
 	try {
 		// Load application configuration
 		const config = loadConfig();
-		
+
 		// Read environment variables
 		const latitude = parseFloat(env.LAT || '63.4305'); // Default: Trondheim
 		const longitude = parseFloat(env.LON || '10.3951');
 		const frostClientId = env.FROST_CLIENT_ID;
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
+		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
 
 		// Create timeline
 		const timeline = new Timeline(48, 48); // 48 hours back and forward
@@ -40,6 +43,22 @@ export const load: PageServerLoad = async () => {
 		});
 		const solarResult = await solarData.prepare();
 
+		// Create and prepare energy data
+		const energyData = new EnergyData(timeline, {
+			zone: energyArea,
+			userAgent,
+			energyHeight: 40 // Height for energy visualization area
+		});
+		const energyResult = await energyData.prepare();
+
+		// Debug logging
+		console.log('Energy result:', {
+			markersCount: energyResult.energyMarkers.length,
+			scaleInfo: energyResult.energyScale,
+			firstMarker: energyResult.energyMarkers[0],
+			zone: energyArea
+		});
+
 		return {
 			timeline: {
 				width: timeline.width,
@@ -51,6 +70,7 @@ export const load: PageServerLoad = async () => {
 			},
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			...solarResult, // solarMarkers, solarScale
+			...energyResult, // energyMarkers, energyScale
 			config: config.visualization, // Pass visualization config to client
 			location: {
 				latitude,
@@ -92,6 +112,13 @@ export const load: PageServerLoad = async () => {
 				rowMarkers: [],
 				min: 0,
 				max: 90
+			},
+			energyMarkers: [],
+			energyScale: {
+				height: 80,
+				rowMarkers: [],
+				min: 0,
+				max: 2
 			},
 			location: {
 				latitude: parseFloat(env.LAT || '63.4305'),

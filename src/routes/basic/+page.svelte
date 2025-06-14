@@ -16,11 +16,21 @@
 		precipitationScale,
 		solarMarkers,
 		solarScale,
+		energyMarkers,
+		energyScale,
 		config,
 		location,
 		error
 	} = data;
 	const { hourTicks, dayLabelTicks, nowX, hourWidth, dayNightMarkers } = timeline;
+
+	// Debug logging
+	console.log('Energy data:', {
+		energyMarkers: energyMarkers?.length || 0,
+		energyScale,
+		firstEnergyMarker: energyMarkers?.[0],
+		sampleMarkers: energyMarkers?.slice(0, 3)
+	});
 
 	// Generate SVG path using d3.line with smooth curves
 	$: temperaturePath =
@@ -148,6 +158,77 @@
 				transform="translate(0, 80)"
 			/>
 		{/if}
+
+		<!-- Energy price bars for each hour -->
+		<g transform="translate(0, 350)">
+			{#if energyMarkers && energyMarkers.length > 0}
+				{#each energyMarkers as marker, i}
+					{#if marker.nokPerKwh !== undefined && marker.nokPerKwh > 0 && marker.x !== undefined && marker.y !== undefined}
+						<rect
+							x={marker.x}
+							y={-marker.y}
+							width={hourWidth}
+							height={marker.y}
+							fill="rgba(255, 165, 0, 0.7)"
+							opacity="0.8"
+						>
+							<title>{marker.tstr}: {marker.nokPerKwh?.toFixed(4)} NOK/kWh (index: {i})</title>
+						</rect>
+					{:else}
+						<!-- Debug rectangle for missing data -->
+						{#if marker.x !== undefined}
+							<rect
+								x={marker.x}
+								y={-10}
+								width={hourWidth}
+								height={10}
+								fill="red"
+								opacity="0.3"
+							>
+								<title>Missing data: {JSON.stringify({
+									nokPerKwh: marker.nokPerKwh,
+									x: marker.x,
+									y: marker.y,
+									index: i
+								})}</title>
+							</rect>
+						{/if}
+					{/if}
+				{/each}
+			{:else}
+				<!-- Debug message when no energy markers -->
+				<text x="50" y="-30" fill="red" font-size="12">
+					No energy markers found (count: {energyMarkers?.length || 0})
+				</text>
+			{/if}
+
+			<!-- Energy price grid lines -->
+			{#if energyScale && energyScale.rowMarkers.length > 0}
+				{#each energyScale.rowMarkers as marker}
+					<line
+						x1={0}
+						y1={-marker.y}
+						x2={timeline.width}
+						y2={-marker.y}
+						stroke="#ffa500"
+						stroke-width="1"
+						stroke-dasharray="2,2"
+						opacity="0.5"
+					/>
+					<text
+						x={timeline.width - 70}
+						y={-marker.y}
+						font-family="sans-serif"
+						font-size="8"
+						fill="#ff8c00"
+						dominant-baseline="central"
+						text-anchor="start"
+					>
+						{marker.value.toFixed(3)} NOK/kWh
+					</text>
+				{/each}
+			{/if}
+		</g>
 
 		<!-- Precipitation bars for each hour -->
 		{#if precipitationMarkers && precipitationMarkers.length > 0}
