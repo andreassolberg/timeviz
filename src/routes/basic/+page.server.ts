@@ -39,9 +39,6 @@ export const load: PageServerLoad = async () => {
 
 		// Fetch and prepare all weather data in single operation
 		const result = await weatherData.prepare();
-		
-		// Debug weather data for precipitation issues
-		weatherData.logDebugInfo(result);
 
 		// Create and prepare solar data
 		const solarData = new SolarData(timeline, {
