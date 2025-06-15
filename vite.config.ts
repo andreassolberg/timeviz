@@ -5,7 +5,7 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		watch: {
-			include: ['config.json']
+			ignored: ['!config.json']
 		}
 	}
 });
