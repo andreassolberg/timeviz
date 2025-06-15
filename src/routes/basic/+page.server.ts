@@ -19,8 +19,12 @@ export const load: PageServerLoad = async () => {
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
 		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
 
-		// Create timeline
-		const timeline = new Timeline(48, 48); // 48 hours back and forward
+		// Create timeline with config values
+		const timeline = new Timeline(
+			config.data.timeline.hoursPast,
+			config.data.timeline.hoursFuture,
+			config.visualization.timeline?.dayWidth
+		);
 
 		// Create unified weather data handler
 		const weatherData = new WeatherData(timeline, {

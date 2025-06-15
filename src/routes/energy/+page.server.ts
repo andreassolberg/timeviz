@@ -6,12 +6,19 @@ import type { PageServerLoad } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async () => {
 	try {
+		// Load configuration
+		const config = loadConfig();
+		
 		// Read environment variables
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
 		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
 
-		// Create timeline (48 hours back and forward)
-		const timeline = new Timeline(48, 48);
+		// Create timeline with config values
+		const timeline = new Timeline(
+			config.data.timeline.hoursPast,
+			config.data.timeline.hoursFuture,
+			config.visualization.timeline?.dayWidth
+		);
 
 		// Create and prepare energy data
 		const energyData = new EnergyData(timeline, {

@@ -6,6 +6,9 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
 	try {
+		// Load configuration
+		const config = loadConfig();
+		
 		// Read environment variables
 		const latitude = parseFloat(env.LAT || '63.4305'); // Default: Trondheim
 		const longitude = parseFloat(env.LON || '10.3951');
@@ -19,8 +22,12 @@ export const load: PageServerLoad = async () => {
 			userAgent
 		});
 
-		// Create timeline and YrDataProvider
-		const timeline = new Timeline(48, 48); // 48 hours back and forward
+		// Create timeline with config values
+		const timeline = new Timeline(
+			config.data.timeline.hoursPast,
+			config.data.timeline.hoursFuture,
+			config.visualization.timeline?.dayWidth
+		);
 		const timeWindow = timeline.getTimeWindow();
 		
 		const weatherProvider = new YrDataProvider(

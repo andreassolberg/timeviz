@@ -5,6 +5,12 @@ import path from 'path';
  * Configuration interface for the application
  */
 export interface AppConfig {
+	data: {
+		timeline: {
+			hoursPast: number;
+			hoursFuture: number;
+		};
+	};
 	visualization: {
 		fontSize: {
 			temperatureExtremes: number;
@@ -29,6 +35,9 @@ export interface AppConfig {
 		scales?: {
 			maxEnergyPrice: number;
 		};
+		timeline?: {
+			dayWidth: number;
+		};
 	};
 }
 
@@ -36,6 +45,12 @@ export interface AppConfig {
  * Default configuration fallback
  */
 const DEFAULT_CONFIG: AppConfig = {
+	data: {
+		timeline: {
+			hoursPast: 48,
+			hoursFuture: 48
+		}
+	},
 	visualization: {
 		fontSize: {
 			temperatureExtremes: 8,
@@ -59,6 +74,9 @@ const DEFAULT_CONFIG: AppConfig = {
 		},
 		scales: {
 			maxEnergyPrice: 2
+		},
+		timeline: {
+			dayWidth: 200
 		}
 	}
 };
@@ -94,6 +112,20 @@ export function loadConfig(): AppConfig {
 function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): AppConfig {
 	const merged = { ...defaultConfig };
 	
+	if (userConfig.data) {
+		merged.data = {
+			...merged.data,
+			...userConfig.data
+		};
+		
+		if (userConfig.data.timeline) {
+			merged.data.timeline = {
+				...merged.data.timeline,
+				...userConfig.data.timeline
+			};
+		}
+	}
+	
 	if (userConfig.visualization) {
 		merged.visualization = {
 			...merged.visualization,
@@ -125,6 +157,13 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 			merged.visualization.scales = {
 				...merged.visualization.scales,
 				...userConfig.visualization.scales
+			};
+		}
+		
+		if (userConfig.visualization.timeline) {
+			merged.visualization.timeline = {
+				...merged.visualization.timeline,
+				...userConfig.visualization.timeline
 			};
 		}
 	}

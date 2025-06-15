@@ -1,4 +1,10 @@
 {
+	"data": {
+		"timeline": {
+			"hoursPast": 48,
+			"hoursFuture": 48
+		}
+	},
 	"visualization": {
 		"fontSize": {
 			"temperatureExtremes": 8,
@@ -22,6 +28,9 @@
 		},
 		"scales": {
 			"maxEnergyPrice": 1
+		},
+		"timeline": {
+			"dayWidth": 240
 		}
 	}
 }

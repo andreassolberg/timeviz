@@ -2,6 +2,7 @@
 	import SVGViz from '$lib/components/SVGViz.svelte';
 	import { line, curveMonotoneX } from 'd3-shape';
 	import { scaleLinear } from 'd3-scale';
+	import { getIconFilename } from '$lib/weatherSymbolMapping';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -11,7 +12,6 @@
 		.domain([0, 2, 5, 7, 10, 12]) // Smooth transitions between UV levels
 		.range(['#059669', '#10b981', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']) // green → light green → orange → red → dark red → purple
 		.clamp(true);
-
 
 	// Destructure data from server
 	const {
@@ -31,6 +31,9 @@
 		error
 	} = data;
 	const { hourTicks, dayLabelTicks, nowX, hourWidth, dayNightMarkers } = timeline;
+
+	// Calculate weather icon width as 95% of hour width
+	const iconWidth = hourWidth * 0.95;
 
 	// Debug logging
 	console.log('Energy data:', {
@@ -113,11 +116,11 @@
 		{#if solarMarkers && solarScale && solarPath}
 			<path
 				d={solarPath}
-				fill="#f59e0b"
-				stroke="#f59e0b"
-				opacity={0.3}
-				stroke-width={1}
-				stroke-opacity={0.3}
+				fill="#FCE0B1"
+				stroke="#895906"
+				opacity={1}
+				stroke-width={0.5}
+				stroke-opacity={0.4}
 				transform="translate(0, 50) "
 			/>
 		{/if}
@@ -196,17 +199,18 @@
 
 					<!-- Weather Symbol icon -->
 					{#if marker.weatherSymbol}
+						{@const iconFilename = getIconFilename(marker.weatherSymbol)}
 						<image
-							href="/weather-icons/{marker.weatherSymbol}.svg"
-							x={marker.x - 8}
-							y={marker.y + 130}
-							width="16"
-							height="16"
+							href="/node_modules/@yr/weather-symbols/dist/svg/{iconFilename}.svg"
+							x={marker.x - iconWidth / 2}
+							y={marker.y + 64}
+							width={iconWidth}
+							height={iconWidth}
 						>
-							<title>{marker.weatherSymbol}</title>
+							<title>{marker.weatherSymbol} → {iconFilename}</title>
 						</image>
 						<!-- Weather Symbol text for debugging -->
-						<text
+						<!-- <text
 							x={marker.x}
 							y={marker.y + 120}
 							font-family="sans-serif"
@@ -216,7 +220,7 @@
 							dominant-baseline="central"
 						>
 							{marker.weatherSymbol}
-						</text>
+						</text> -->
 					{/if}
 				{/if}
 			{/each}

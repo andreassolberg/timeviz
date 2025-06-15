@@ -10,7 +10,7 @@ class Timeline {
 	width: number;
 	scale: (date: Date) => number;
 
-	constructor(hoursPast: number, hoursFuture: number, daywidth: number = 200) {
+	constructor(hoursPast: number, hoursFuture: number, daywidth: number = 240) {
 		// Calculate current time
 		this.now = new Date();
 
