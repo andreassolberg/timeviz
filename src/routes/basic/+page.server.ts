@@ -104,6 +104,8 @@ export const load: PageServerLoad = async () => {
 				min: 0,
 				max: 20
 			},
+			extremeTemperatureMarkers: [],
+			weatherSymbolMarkers: [],
 			precipitationMarkers: [],
 			precipitationScale: {
 				height: 60,
@@ -111,6 +113,7 @@ export const load: PageServerLoad = async () => {
 				min: 0,
 				max: 5
 			},
+			extremePrecipitationMarkers: [],
 			solarMarkers: [],
 			solarScale: {
 				height: 80,
@@ -125,6 +128,7 @@ export const load: PageServerLoad = async () => {
 				min: 0,
 				max: 2
 			},
+			extremeEnergyMarkers: [],
 			location: {
 				latitude: parseFloat(env.LAT || '63.4305'),
 				longitude: parseFloat(env.LON || '10.3951')

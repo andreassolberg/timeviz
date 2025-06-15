@@ -24,6 +24,7 @@
 		extremeTemperatureMarkers,
 		precipitationMarkers,
 		precipitationScale,
+		extremePrecipitationMarkers,
 		weatherSymbolMarkers,
 		solarMarkers,
 		solarScale,
@@ -273,6 +274,29 @@
 							>
 								<title>{marker.tstr}: {marker.precipitation}mm</title>
 							</rect>
+						{/if}
+					{/each}
+				{/if}
+
+				<!-- Extreme precipitation marker (maximum) -->
+				{#if extremePrecipitationMarkers && extremePrecipitationMarkers.length > 0}
+					{#each extremePrecipitationMarkers as marker}
+						{#if marker.x !== undefined && marker.y !== undefined && marker.precipitation !== undefined}
+							<text
+								x={marker.x + hourWidth / 2}
+								y={marker.y + 10}
+								font-family="sans-serif"
+								font-size={config.visualization.fontSize.scaleLabels}
+								font-weight="bold"
+								fill="#1976d2"
+								stroke="white"
+								stroke-width="2"
+								paint-order="stroke"
+								text-anchor="middle"
+								dominant-baseline="central"
+							>
+								{marker.precipitation.toFixed(1)}mm
+							</text>
 						{/if}
 					{/each}
 				{/if}

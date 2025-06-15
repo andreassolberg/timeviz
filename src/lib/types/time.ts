@@ -39,6 +39,9 @@ export interface TimeTick {
 	precipitationMax?: number; // maks mm per time
 	precipitationMin?: number; // min mm per time
 
+	/** Precipitation extreme markers */
+	precipMax?: boolean; // Is maximum precipitation for period
+
 	/** Energy price data properties */
 	nokPerKwh?: number; // NOK per kWh
 	eurPerKwh?: number; // EUR per kWh

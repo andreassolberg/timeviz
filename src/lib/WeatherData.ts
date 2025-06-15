@@ -42,6 +42,7 @@ export interface WeatherDataResult {
 	// Nedbør:
 	precipitationMarkers: TimeTick[];
 	precipitationScale: ValueScaleInfo;
+	extremePrecipitationMarkers: TimeTick[]; // Maks nedbør for perioden
 
 	// Værsymbol:
 	weatherSymbolMarkers: TimeTick[]; // Værsymboler med korrekt posisjonering
@@ -92,6 +93,8 @@ export class WeatherData {
 		// Generer markers for hver værtype:
 		const temperatureMarkers = this.createTemperatureMarkers(rawWeatherData, temperatureScale);
 		const extremeTemperatureMarkers = this.getExtremeTemperatureMarkers(temperatureMarkers);
+		const precipitationMarkers = this.createPrecipitationMarkers(rawWeatherData, precipitationScale);
+		const extremePrecipitationMarkers = this.getExtremePrecipitationMarkers(precipitationMarkers);
 		const weatherSymbolMarkers = this.createWeatherSymbolMarkers(temperatureMarkers);
 
 		return {
@@ -99,8 +102,9 @@ export class WeatherData {
 			temperatureMarkers,
 			temperatureScale: this.getScaleInfo(temperatureScale),
 			extremeTemperatureMarkers,
-			precipitationMarkers: this.createPrecipitationMarkers(rawWeatherData, precipitationScale),
+			precipitationMarkers,
 			precipitationScale: this.getScaleInfo(precipitationScale, true), // true = skip row markers
+			extremePrecipitationMarkers,
 			weatherSymbolMarkers
 		};
 	}
@@ -309,6 +313,43 @@ export class WeatherData {
 		}
 
 		return filtered;
+	}
+
+	/**
+	 * Find extreme precipitation marker (maximum) for the entire period
+	 * @param precipitationMarkers - Array of precipitation markers with coordinates
+	 * @returns Array with single marker for max precipitation, or empty array if no precipitation
+	 */
+	private getExtremePrecipitationMarkers(precipitationMarkers: TimeTick[]): TimeTick[] {
+		// Filter markers with valid precipitation data
+		const validMarkers = precipitationMarkers.filter(
+			(marker) => marker.precipitation !== undefined && marker.precipitation > 0
+		);
+
+		// If no precipitation at all, return empty array
+		if (validMarkers.length === 0) {
+			return [];
+		}
+
+		// Find marker with maximum precipitation
+		let maxMarker = validMarkers[0];
+		let maxPrecipitation = maxMarker.precipitation!;
+
+		for (const marker of validMarkers) {
+			if (marker.precipitation! > maxPrecipitation) {
+				maxPrecipitation = marker.precipitation!;
+				maxMarker = marker;
+			}
+		}
+
+		// Return array with single max marker
+		// Add precipMax property to indicate this is a maximum
+		return [
+			{
+				...maxMarker,
+				precipMax: true
+			}
+		];
 	}
 
 	/**
