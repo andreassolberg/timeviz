@@ -141,7 +141,8 @@ export class WeatherData {
 		};
 
 		// Ikke clamp - lar verdier over 5mm gå utenfor skalaen
-		return new ValueScale(precipRange.min, precipRange.max, this.config.precipitationHeight!, false);
+		// inverted=false for høyde-verdier (0mm = 0px høyde, 5mm = full høyde)
+		return new ValueScale(precipRange.min, precipRange.max, this.config.precipitationHeight!, false, false);
 	}
 
 	/**

@@ -18,19 +18,19 @@ export class ValueScale {
 	 * @param height - Height of the scale area in pixels
 	 * @param clamp - Whether to clamp values outside domain (default: true)
 	 */
-	constructor(minValue: number, maxValue: number, height: number, clamp: boolean = true) {
+	constructor(minValue: number, maxValue: number, height: number, clamp: boolean = true, inverted: boolean = true) {
 		// Create d3 linear scale
-		// Y coordinates: 0 is at top, height is at bottom
-		// maxValue -> 0 (top)
-		// minValue -> height (bottom)
-		this.linearScale = scaleLinear().domain([minValue, maxValue]).range([height, 0]).clamp(clamp);
+		// inverted=true (default): Y coordinates for positioning (0=top, height=bottom)
+		// inverted=false: Height values for bars (0=no height, height=full height)
+		const range = inverted ? [height, 0] : [0, height];
+		this.linearScale = scaleLinear().domain([minValue, maxValue]).range(range).clamp(clamp);
 	}
 
 	/**
-	 * Scale a value to its corresponding y-coordinate
+	 * Scale a value to its corresponding coordinate or height
 	 *
 	 * @param value - The input value to scale
-	 * @returns The y-coordinate for the given value (0 = top, height = bottom)
+	 * @returns The y-coordinate (inverted) or height (normal) for the given value
 	 */
 	scale(value: number): number {
 		return parseFloat(this.linearScale(value).toFixed(2));
