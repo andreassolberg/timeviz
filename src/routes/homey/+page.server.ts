@@ -94,25 +94,20 @@ export const load: PageServerLoad = async () => {
 		})).slice(0, 10) : []; // Show first 10 insights as a test
 
 		// Test historical data fetch for specific devices
-		const endTime = new Date();
-		const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
-		
 		// Temperature device
 		let temperatureData = null;
 		const tempDeviceLogId = 'homey:device:86d16c56-6190-4a77-9d7f-1d8a46355fc6:measure_temperature';
 		
 		try {
+			// Use last7Days resolution for better data coverage
 			temperatureData = await homey.getInsightLogs(tempDeviceLogId, {
-				resolution: '1hour',
-				start: startTime.toISOString(),
-				end: endTime.toISOString()
+				resolution: 'last7Days'
 			});
 			
 			console.log('Historical temperature data fetched:', {
 				logId: tempDeviceLogId,
 				dataPoints: temperatureData?.values?.length || 0,
-				start: startTime.toISOString(),
-				end: endTime.toISOString()
+				resolution: 'last7Days'
 			});
 		} catch (error) {
 			console.error('Error fetching temperature data:', error.message);
@@ -124,17 +119,15 @@ export const load: PageServerLoad = async () => {
 		const powerDeviceLogId = 'homey:device:0311f8e5-4211-4de5-ada2-03049f72a731:energy_power';
 		
 		try {
+			// Use last24Hours for power data to get more granular readings
 			powerData = await homey.getInsightLogs(powerDeviceLogId, {
-				resolution: '1hour',
-				start: startTime.toISOString(),
-				end: endTime.toISOString()
+				resolution: 'last24Hours'
 			});
 			
 			console.log('Historical power data fetched:', {
 				logId: powerDeviceLogId,
 				dataPoints: powerData?.values?.length || 0,
-				start: startTime.toISOString(),
-				end: endTime.toISOString()
+				resolution: 'last24Hours'
 			});
 		} catch (error) {
 			console.error('Error fetching power data:', error.message);
