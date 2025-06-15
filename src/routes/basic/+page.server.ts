@@ -23,7 +23,8 @@ export const load: PageServerLoad = async () => {
 		const timeline = new Timeline(
 			config.data.timeline.hoursPast,
 			config.data.timeline.hoursFuture,
-			config.visualization.timeline?.dayWidth
+			config.visualization.timeline?.dayWidth,
+			config.data.timeline.fixedNow
 		);
 
 		// Create unified weather data handler
@@ -70,7 +71,9 @@ export const load: PageServerLoad = async () => {
 				dayLabelTicks: timeline.getDayLabelTicks(),
 				nowX: timeline.getNowX(),
 				hourWidth: timeline.getHourWidth(),
-				dayNightMarkers: timeline.getDayNightMarkers(7, 23) // Dag fra 07:00 til 23:00 lokaltid
+				dayNightMarkers: timeline.getDayNightMarkers(7, 23), // Dag fra 07:00 til 23:00 lokaltid
+				isFixedTime: timeline.isFixedTime,
+				now: timeline.now
 			},
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			...solarResult, // solarMarkers, solarScale
@@ -85,7 +88,8 @@ export const load: PageServerLoad = async () => {
 		console.error('Error loading weather data:', error);
 
 		// Fallback - return only timeline data without weather data
-		const timeline = new Timeline(48, 48);
+		const fallbackConfig = loadConfig();
+		const timeline = new Timeline(48, 48, 240, fallbackConfig.data.timeline.fixedNow);
 
 		return {
 			timeline: {
@@ -94,7 +98,9 @@ export const load: PageServerLoad = async () => {
 				dayLabelTicks: timeline.getDayLabelTicks(),
 				nowX: timeline.getNowX(),
 				hourWidth: timeline.getHourWidth(),
-				dayNightMarkers: []
+				dayNightMarkers: [],
+				isFixedTime: timeline.isFixedTime,
+				now: timeline.now
 			},
 			weatherData: [],
 			temperatureMarkers: [],

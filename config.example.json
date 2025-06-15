@@ -1,0 +1,53 @@
+{
+	"data": {
+		"timeline": {
+			"hoursPast": 48,
+			"hoursFuture": 48,
+			"_comment": "Uncomment fixedNow to lock timeline to a specific timestamp",
+			"_fixedNow": "2024-01-15T14:00:00+01:00"
+		}
+	},
+	"visualization": {
+		"sections": {
+			"header": { "height": 15, "from": null },
+			"solar": { "height": 20, "from": "header" },
+			"padding0": { "height": 30, "from": "solar" },
+			"temperature": { "height": 150, "from": "padding0" },
+			"padding1": { "height": 30, "from": "temperature" },
+			"energy": { "height": 80, "from": "padding1" },
+			"main": {
+				"heightRel": ["padding0", "temperature", "padding1", "energy"],
+				"from": "solar"
+			}
+		},
+		"fontSize": {
+			"temperatureExtremes": 8,
+			"energyExtremes": 8,
+			"hourTicks": 6,
+			"dayLabels": 12,
+			"scaleLabels": 8,
+			"uvIndex": 10
+		},
+		"colors": {
+			"temperatureMax": "#dc2626",
+			"temperatureMin": "#2563eb",
+			"temperatureLine": "#dc2626",
+			"energyPriceMax": "#dc2626",
+			"energyPriceMin": "#16a34a",
+			"solar": "#FFFCAF",
+			"precipitation": "rgba(54, 162, 235, 0.7)"
+		},
+		"layout": {
+			"temperatureHeight": 100,
+			"precipitationHeight": 60,
+			"solarHeight": 80,
+			"energyHeight": 80
+		},
+		"scales": {
+			"maxEnergyPrice": 1
+		},
+		"timeline": {
+			"dayWidth": 240
+		}
+	}
+}

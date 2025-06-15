@@ -56,6 +56,30 @@ npm run cloc         # Count lines of code in src directory
 - Core logic classes in `src/lib/`
 - Global styles reset in `src/app.html`
 
+## Configuration
+
+### Fixed Timestamp Mode
+
+You can lock the timeline to a specific point in time for historical analysis or debugging by adding `fixedNow` to config.json:
+
+```json
+{
+  "data": {
+    "timeline": {
+      "hoursPast": 48,
+      "hoursFuture": 48,
+      "fixedNow": "2024-01-15T14:00:00+01:00"
+    }
+  }
+}
+```
+
+When `fixedNow` is set:
+- The timeline will be centered on this timestamp instead of current time
+- The "now" line will be displayed in orange instead of black
+- A yellow indicator box will show the fixed timestamp
+- All data fetching will be relative to this fixed point
+
 ## Environment Variables
 
 Create a `.env` file in the project root with:

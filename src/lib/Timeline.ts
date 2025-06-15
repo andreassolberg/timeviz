@@ -9,10 +9,22 @@ class Timeline {
 	daywidth: number;
 	width: number;
 	scale: (date: Date) => number;
+	isFixedTime: boolean;
 
-	constructor(hoursPast: number, hoursFuture: number, daywidth: number = 240) {
-		// Calculate current time
-		this.now = new Date();
+	constructor(hoursPast: number, hoursFuture: number, daywidth: number = 240, fixedNow?: string) {
+		// Calculate current time - use fixedNow if provided, otherwise use actual current time
+		if (fixedNow) {
+			const parsedDate = new Date(fixedNow);
+			if (isNaN(parsedDate.getTime())) {
+				throw new Error(`Invalid fixedNow timestamp: ${fixedNow}`);
+			}
+			this.now = parsedDate;
+			this.isFixedTime = true;
+			console.log(`Timeline: Using fixed timestamp: ${this.now.toISOString()}`);
+		} else {
+			this.now = new Date();
+			this.isFixedTime = false;
+		}
 
 		// Adjust to nearest hour
 		this.nowAdjusted = new Date(this.now);

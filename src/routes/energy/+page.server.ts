@@ -18,7 +18,8 @@ export const load: PageServerLoad = async () => {
 		const timeline = new Timeline(
 			config.data.timeline.hoursPast,
 			config.data.timeline.hoursFuture,
-			config.visualization.timeline?.dayWidth
+			config.visualization.timeline?.dayWidth,
+			config.data.timeline.fixedNow
 		);
 
 		// Create and prepare energy data

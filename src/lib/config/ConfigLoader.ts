@@ -9,6 +9,7 @@ export interface AppConfig {
 		timeline: {
 			hoursPast: number;
 			hoursFuture: number;
+			fixedNow?: string; // Optional fixed timestamp in ISO 8601 format
 		};
 	};
 	visualization: {

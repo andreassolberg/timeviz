@@ -199,7 +199,7 @@
 						y1={sectionPositions.main.y}
 						x2={tick.x}
 						y2={sectionPositions.main.y + sectionPositions.main.height}
-						stroke={tick.now ? '#000' : '#eee'}
+						stroke={tick.now ? (timeline.isFixedTime ? '#f59e0b' : '#000') : '#eee'}
 						stroke-width={1}
 					/>
 				{/each}
@@ -542,6 +542,14 @@
 				{/if}
 			</g>
 		</SVGViz>
+		
+		<!-- Fixed time indicator -->
+		{#if timeline.isFixedTime}
+			<div class="fixed-time-indicator">
+				<p>📌 Using fixed timestamp: <strong>{new Date(timeline.now).toLocaleString('no-NO')}</strong></p>
+				<p class="fixed-time-hint">Timeline is locked to this specific point in time for historical analysis.</p>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -571,5 +579,30 @@
 		font-style: italic;
 		margin-top: 1rem;
 		opacity: 0.8;
+	}
+
+	.fixed-time-indicator {
+		background-color: #fef3c7;
+		border: 2px solid #f59e0b;
+		border-radius: 8px;
+		padding: 1rem;
+		margin: 1rem auto;
+		max-width: 600px;
+		text-align: center;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.fixed-time-indicator p {
+		margin: 0.25rem 0;
+	}
+
+	.fixed-time-indicator strong {
+		color: #d97706;
+	}
+
+	.fixed-time-hint {
+		font-size: 0.875rem;
+		color: #92400e;
+		opacity: 0.9;
 	}
 </style>
