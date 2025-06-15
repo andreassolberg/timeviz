@@ -7,8 +7,8 @@
 	},
 	"visualization": {
 		"sections": {
-			"header": { "height": 20, "from": null },
-			"solar": { "height": 30, "from": "header" },
+			"header": { "height": 15, "from": null },
+			"solar": { "height": 20, "from": "header" },
 			"padding0": { "height": 30, "from": "solar" },
 			"temperature": { "height": 150, "from": "padding0" },
 			"padding1": { "height": 30, "from": "temperature" },
