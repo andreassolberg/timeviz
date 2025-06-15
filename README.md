@@ -5,11 +5,13 @@ A timeline visualization showing weather data from past days to future days, inc
 ## Setup
 
 1. Copy `.env.example` to `.env` and configure your settings:
+
    ```bash
    cp .env.example .env
    ```
 
 2. Add your API keys and location to `.env`:
+
    ```
    LAT=63.4305              # Your latitude
    LON=10.3951              # Your longitude
@@ -17,6 +19,7 @@ A timeline visualization showing weather data from past days to future days, inc
    ```
 
 3. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -42,11 +45,13 @@ A helper script `frost-api.sh` is included for testing the Frost API:
 ### Usage
 
 1. First, load your environment variables:
+
    ```bash
    source .env
    ```
 
 2. Use the script to query Frost API:
+
    ```bash
    # Get station details
    ./frost-api.sh "/sources/v0.jsonld?ids=SN68860"
@@ -62,8 +67,9 @@ A helper script `frost-api.sh` is included for testing the Frost API:
    ```
 
 ### Common URL Encodings
+
 - **Ø**: `%C3%98`
-- **Æ**: `%C3%86`  
+- **Æ**: `%C3%86`
 - **Å**: `%C3%85`
 - **Space**: `%20`
 

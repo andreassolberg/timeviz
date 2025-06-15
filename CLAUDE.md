@@ -85,6 +85,7 @@ Use `.env.example` as a template. Environment variables are automatically exclud
 ## Weather Icons
 
 The application uses SVG weather icons from the `@yr/weather-symbols` npm package:
+
 - Icons are provided by the official Yr weather symbols package
 - SVG files are accessed from `/node_modules/@yr/weather-symbols/dist/svg/`
 - Weather symbols use numeric codes (e.g., "01d", "02n", "04") mapped from API `symbol_code` values

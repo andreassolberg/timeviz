@@ -12,7 +12,7 @@
 			"padding0": { "height": 30, "from": "solar" },
 			"temperature": { "height": 150, "from": "padding0" },
 			"padding1": { "height": 30, "from": "temperature" },
-			"energy": { "height": 0, "from": "padding1" },
+			"energy": { "height": 80, "from": "padding1" },
 			"main": {
 				"heightRel": ["padding0", "temperature", "padding1", "energy"],
 				"from": "solar"
@@ -20,6 +20,7 @@
 		},
 		"fontSize": {
 			"temperatureExtremes": 8,
+			"energyExtremes": 8,
 			"hourTicks": 6,
 			"dayLabels": 12,
 			"scaleLabels": 8,
@@ -29,7 +30,9 @@
 			"temperatureMax": "#dc2626",
 			"temperatureMin": "#2563eb",
 			"temperatureLine": "#dc2626",
-			"solar": "#f59e0b",
+			"energyPriceMax": "#dc2626",
+			"energyPriceMin": "#16a34a",
+			"solar": "#FFFCAF",
 			"precipitation": "rgba(54, 162, 235, 0.7)"
 		},
 		"layout": {
