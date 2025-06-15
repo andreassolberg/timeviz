@@ -21,6 +21,7 @@ export interface AppConfig {
 		};
 		fontSize: {
 			temperatureExtremes: number;
+			energyExtremes: number;
 			hourTicks: number;
 			dayLabels: number;
 			scaleLabels: number;
@@ -30,6 +31,8 @@ export interface AppConfig {
 			temperatureMax: string;
 			temperatureMin: string;
 			temperatureLine: string;
+			energyPriceMax: string;
+			energyPriceMin: string;
 			solar: string;
 			precipitation: string;
 		};
@@ -61,6 +64,7 @@ const DEFAULT_CONFIG: AppConfig = {
 	visualization: {
 		fontSize: {
 			temperatureExtremes: 8,
+			energyExtremes: 8,
 			hourTicks: 6,
 			dayLabels: 12,
 			scaleLabels: 8,
@@ -70,6 +74,8 @@ const DEFAULT_CONFIG: AppConfig = {
 			temperatureMax: '#dc2626',
 			temperatureMin: '#2563eb',
 			temperatureLine: '#dc2626',
+			energyPriceMax: '#dc2626',
+			energyPriceMin: '#16a34a',
 			solar: '#f59e0b',
 			precipitation: 'rgba(54, 162, 235, 0.7)'
 		},
@@ -95,18 +101,17 @@ export function loadConfig(): AppConfig {
 	try {
 		// Try to load config.json from project root
 		const configPath = path.resolve(process.cwd(), 'config.json');
-		
+
 		if (fs.existsSync(configPath)) {
 			const configData = fs.readFileSync(configPath, 'utf-8');
 			const userConfig = JSON.parse(configData) as Partial<AppConfig>;
-			
+
 			// Deep merge with defaults
 			return mergeConfig(DEFAULT_CONFIG, userConfig);
 		}
-		
+
 		console.log('Config file not found, using defaults');
 		return DEFAULT_CONFIG;
-		
 	} catch (error) {
 		console.error('Error loading config file, using defaults:', error);
 		return DEFAULT_CONFIG;
@@ -118,13 +123,13 @@ export function loadConfig(): AppConfig {
  */
 function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): AppConfig {
 	const merged = { ...defaultConfig };
-	
+
 	if (userConfig.data) {
 		merged.data = {
 			...merged.data,
 			...userConfig.data
 		};
-		
+
 		if (userConfig.data.timeline) {
 			merged.data.timeline = {
 				...merged.data.timeline,
@@ -132,48 +137,48 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 			};
 		}
 	}
-	
+
 	if (userConfig.visualization) {
 		merged.visualization = {
 			...merged.visualization,
 			...userConfig.visualization
 		};
-		
+
 		if (userConfig.visualization.fontSize) {
 			merged.visualization.fontSize = {
 				...merged.visualization.fontSize,
 				...userConfig.visualization.fontSize
 			};
 		}
-		
+
 		if (userConfig.visualization.colors) {
 			merged.visualization.colors = {
 				...merged.visualization.colors,
 				...userConfig.visualization.colors
 			};
 		}
-		
+
 		if (userConfig.visualization.layout) {
 			merged.visualization.layout = {
 				...merged.visualization.layout,
 				...userConfig.visualization.layout
 			};
 		}
-		
+
 		if (userConfig.visualization.scales) {
 			merged.visualization.scales = {
 				...merged.visualization.scales,
 				...userConfig.visualization.scales
 			};
 		}
-		
+
 		if (userConfig.visualization.timeline) {
 			merged.visualization.timeline = {
 				...merged.visualization.timeline,
 				...userConfig.visualization.timeline
 			};
 		}
-		
+
 		if (userConfig.visualization.sections) {
 			merged.visualization.sections = {
 				...merged.visualization.sections,
@@ -181,7 +186,7 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 			};
 		}
 	}
-	
+
 	return merged;
 }
 
@@ -191,7 +196,7 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 export function getConfigValue<T>(config: AppConfig, path: string): T {
 	const keys = path.split('.');
 	let value: any = config;
-	
+
 	for (const key of keys) {
 		if (value && typeof value === 'object' && key in value) {
 			value = value[key];
@@ -199,7 +204,7 @@ export function getConfigValue<T>(config: AppConfig, path: string): T {
 			throw new Error(`Config path '${path}' not found`);
 		}
 	}
-	
+
 	return value as T;
 }
 
