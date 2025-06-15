@@ -107,6 +107,26 @@ class Items {
     return this.getItemById(id);
   }
 
+  // Alias for getItemByName for compatibility
+  getByName(name) {
+    return this.getItemByName(name);
+  }
+
+  // Filter items by zone name
+  filterByZone(zoneName) {
+    const zone = this.zones.find((z) => z.name.toLowerCase() === zoneName.toLowerCase());
+    if (!zone) {
+      return new Items([], this.zones);
+    }
+
+    const filtered = this.items.filter((item) => {
+      const itemZoneId = item.zone || item._rawData.zone;
+      return itemZoneId === zone.id;
+    });
+
+    return new Items(filtered, this.zones);
+  }
+
   print() {
     // Debug: Items count and details
     this.items.forEach((entity) => {

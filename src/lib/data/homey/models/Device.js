@@ -41,6 +41,13 @@ class Device extends Entity {
     }
     return null;
   }
+
+  getCapabilityValue(capability) {
+    if (this._rawData.capabilitiesObj && this._rawData.capabilitiesObj[capability]) {
+      return this._rawData.capabilitiesObj[capability].value;
+    }
+    return null;
+  }
 }
 
 export default Device;
