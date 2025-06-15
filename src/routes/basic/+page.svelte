@@ -445,39 +445,6 @@
 				{/if}
 			</g>
 		</SVGViz>
-
-		<!-- Debug section positions table -->
-		<div class="debug-section">
-			<h3>Section Stack Debug</h3>
-			<table class="debug-table">
-				<thead>
-					<tr>
-						<th>Section ID</th>
-						<th>Y Position</th>
-						<th>Height</th>
-						<th>Y End</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each Object.entries(sectionPositions) as [sectionId, position]}
-						<tr>
-							<td class="section-id">{sectionId}</td>
-							<td class="y-position">{position.y}px</td>
-							<td class="height">{position.height}px</td>
-							<td class="y-end">{position.y + position.height}px</td>
-						</tr>
-					{/each}
-				</tbody>
-				<tfoot>
-					<tr class="total-row">
-						<td><strong>Total Height</strong></td>
-						<td>-</td>
-						<td>-</td>
-						<td><strong>{totalHeight}px</strong></td>
-					</tr>
-				</tfoot>
-			</table>
-		</div>
 	{/if}
 </div>
 
@@ -507,68 +474,5 @@
 		font-style: italic;
 		margin-top: 1rem;
 		opacity: 0.8;
-	}
-
-	.debug-section {
-		margin-top: 2rem;
-		padding: 1rem;
-		background-color: #f8fafc;
-		border-radius: 8px;
-		border: 1px solid #e2e8f0;
-	}
-
-	.debug-section h3 {
-		margin: 0 0 1rem 0;
-		color: #475569;
-		font-size: 1.1rem;
-	}
-
-	.debug-table {
-		width: 100%;
-		border-collapse: collapse;
-		background-color: white;
-		border-radius: 6px;
-		overflow: hidden;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-	}
-
-	.debug-table th,
-	.debug-table td {
-		padding: 0.75rem 1rem;
-		text-align: left;
-		border-bottom: 1px solid #e2e8f0;
-	}
-
-	.debug-table th {
-		background-color: #64748b;
-		color: white;
-		font-weight: 600;
-		font-size: 0.875rem;
-	}
-
-	.debug-table tbody tr:hover {
-		background-color: #f1f5f9;
-	}
-
-	.section-id {
-		font-family: 'Monaco', 'Menlo', monospace;
-		font-weight: 600;
-		color: #1e40af;
-	}
-
-	.y-position,
-	.height,
-	.y-end {
-		font-family: 'Monaco', 'Menlo', monospace;
-		color: #374151;
-	}
-
-	.total-row {
-		background-color: #f8fafc;
-		border-top: 2px solid #64748b;
-	}
-
-	.total-row td {
-		border-bottom: none;
 	}
 </style>
