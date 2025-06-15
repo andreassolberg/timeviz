@@ -303,6 +303,7 @@
 			</g>
 
 			<g id="energy" transform="translate(0, {sectionPositions.energy.y})">
+				
 				<!-- Energy price bars -->
 				{#if energyMarkers && energyMarkers.length > 0}
 					{#each energyMarkers as marker, i}

@@ -265,10 +265,11 @@ class Timeline {
 	 */
 	getHourWidth(): number {
 		// Calculate width by getting x-coordinates for two consecutive hours
-		const now = new Date();
-		const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+		// Use timeline start as reference to avoid clamping issues
+		const timelineStart = new Date(this.from);
+		const oneHourLater = new Date(timelineStart.getTime() + 60 * 60 * 1000);
 
-		return this.scale(oneHourLater) - this.scale(now);
+		return this.scale(oneHourLater) - this.scale(timelineStart);
 	}
 
 	/**

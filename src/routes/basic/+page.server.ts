@@ -52,7 +52,7 @@ export const load: PageServerLoad = async () => {
 		const energyData = new EnergyData(timeline, {
 			zone: energyArea,
 			userAgent,
-			energyHeight: 40 // Height for energy visualization area
+			energyHeight: config.visualization.layout.energyHeight
 		});
 		const energyResult = await energyData.prepare();
 

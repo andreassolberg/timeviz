@@ -101,7 +101,7 @@ export class EnergyData {
 		return {
 			energyData: rawEnergyData,
 			energyMarkers,
-			energyScale: this.getScaleInfo(energyScale),
+			energyScale: this.getScaleInfo(energyScale, true), // true = skip row markers
 			extremeEnergyMarkers
 		};
 	}
@@ -251,15 +251,18 @@ export class EnergyData {
 	/**
 	 * Get ValueScale information for visualization
 	 * @param valueScale - The ValueScale to get info from
+	 * @param skipRowMarkers - Whether to skip row markers (for cleaner visualization)
 	 */
-	private getScaleInfo(valueScale: ValueScale): EnergyScaleInfo {
+	private getScaleInfo(valueScale: ValueScale, skipRowMarkers: boolean = false): EnergyScaleInfo {
 		const domain = valueScale.getDomain();
 		const range = valueScale.getRange();
-		const height = range[0]; // First value is the height (bottom of SVG)
+		// For non-inverted scale: range is [0, height], so height is range[1]
+		// For inverted scale: range is [height, 0], so height is range[0]
+		const height = Math.max(...range);
 
 		return {
 			height,
-			rowMarkers: valueScale.getRowMarkers(),
+			rowMarkers: skipRowMarkers ? [] : valueScale.getRowMarkers(),
 			min: domain[0],
 			max: domain[1]
 		};
