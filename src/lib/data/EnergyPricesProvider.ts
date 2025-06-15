@@ -5,21 +5,21 @@ import type { TimeWindow, TimeTick } from '../types/time';
  */
 export enum PriceZone {
 	NO1 = 'NO1', // Oslo / East Norway
-	NO2 = 'NO2', // Kristiansand / South Norway  
+	NO2 = 'NO2', // Kristiansand / South Norway
 	NO3 = 'NO3', // Trondheim / Central Norway
 	NO4 = 'NO4', // Tromsø / North Norway
-	NO5 = 'NO5'  // Bergen / West Norway
+	NO5 = 'NO5' // Bergen / West Norway
 }
 
 /**
  * Raw API response from hvakosterstrommen.no
  */
 export interface EnergyPriceResponse {
-	time_start: string;      // ISO 8601 time string
-	time_end: string;        // ISO 8601 time string
-	NOK_per_kWh: number;     // Price in NOK/kWh (excl. VAT)
-	EUR_per_kWh: number;     // Price in EUR/kWh (excl. VAT)
-	EXR: number;             // Exchange rate NOK/EUR
+	time_start: string; // ISO 8601 time string
+	time_end: string; // ISO 8601 time string
+	NOK_per_kWh: number; // Price in NOK/kWh (excl. VAT)
+	EUR_per_kWh: number; // Price in EUR/kWh (excl. VAT)
+	EXR: number; // Exchange rate NOK/EUR
 }
 
 /**
@@ -43,7 +43,7 @@ export interface EnergyPricesConfig {
 
 /**
  * EnergyPricesProvider class - Fetches Norwegian electricity prices from hvakosterstrommen.no API
- * 
+ *
  * Features:
  * - Fetches hourly electricity prices for specified time windows
  * - Supports all Norwegian price zones (NO1-NO5)
@@ -68,43 +68,54 @@ export class EnergyPricesProvider {
 	 */
 	async fetchEnergyPricesForTimeWindow(timeWindow: TimeWindow): Promise<TimeTick[]> {
 		try {
-			console.log(`Fetching energy prices for zone ${this.zone} from ${timeWindow.from.ts} to ${timeWindow.to.ts}`);
-			
+			console.log(
+				`Fetching energy prices for zone ${this.zone} from ${timeWindow.from.ts} to ${timeWindow.to.ts}`
+			);
+
 			// Get all unique dates we need to fetch
 			const dates = this.getDateRange(timeWindow.from.ts, timeWindow.to.ts);
-			console.log(`Need to fetch ${dates.length} dates:`, dates.map(d => d.toISOString().split('T')[0]));
-			
+			console.log(
+				`Need to fetch ${dates.length} dates:`,
+				dates.map((d) => d.toISOString().split('T')[0])
+			);
+
 			// Fetch prices for each date
 			const allPrices: EnergyPriceData[] = [];
 			for (const date of dates) {
 				try {
 					console.log(`Fetching prices for ${date.toISOString().split('T')[0]}...`);
 					const dayPrices = await this.fetchDayPrices(date);
-					console.log(`Got ${dayPrices.length} price points for ${date.toISOString().split('T')[0]}`);
+					console.log(
+						`Got ${dayPrices.length} price points for ${date.toISOString().split('T')[0]}`
+					);
 					allPrices.push(...dayPrices);
 				} catch (error) {
 					console.warn(`Failed to fetch prices for ${date.toISOString().split('T')[0]}:`, error);
 					// Continue with other dates even if one fails
 				}
 			}
-			
+
 			console.log(`Total raw prices collected: ${allPrices.length}`);
-			console.log(`Time window filter: ${timeWindow.from.ts.toISOString()} to ${timeWindow.to.ts.toISOString()}`);
-			
+			console.log(
+				`Time window filter: ${timeWindow.from.ts.toISOString()} to ${timeWindow.to.ts.toISOString()}`
+			);
+
 			// Filter to only include prices within the time window and convert to TimeTick
 			const filteredPrices = allPrices
-				.filter(price => {
-					const inRange = price.timestamp >= timeWindow.from.ts && price.timestamp <= timeWindow.to.ts;
+				.filter((price) => {
+					const inRange =
+						price.timestamp >= timeWindow.from.ts && price.timestamp <= timeWindow.to.ts;
 					if (!inRange) {
 						console.log(`Filtering out price at ${price.timestamp.toISOString()} (outside window)`);
 					}
 					return inRange;
 				})
-				.map(price => this.convertToTimeTick(price));
-			
-			console.log(`Successfully fetched ${filteredPrices.length} energy price data points after filtering`);
+				.map((price) => this.convertToTimeTick(price));
+
+			console.log(
+				`Successfully fetched ${filteredPrices.length} energy price data points after filtering`
+			);
 			return filteredPrices;
-			
 		} catch (error) {
 			console.error('Error fetching energy prices:', error);
 			throw new Error(`Failed to fetch energy prices: ${error}`);
@@ -120,35 +131,34 @@ export class EnergyPricesProvider {
 		const year = date.getFullYear();
 		const month = (date.getMonth() + 1).toString().padStart(2, '0');
 		const day = date.getDate().toString().padStart(2, '0');
-		
+
 		const url = `${this.baseUrl}/${year}/${month}-${day}_${this.zone}.json`;
 		console.log(`Attempting to fetch: ${url}`);
-		
+
 		try {
 			const response = await fetch(url, {
 				headers: {
 					'User-Agent': this.userAgent,
-					'Accept': 'application/json'
+					Accept: 'application/json'
 				}
 			});
-			
+
 			if (!response.ok) {
 				console.error(`Failed to fetch ${url}: HTTP ${response.status}: ${response.statusText}`);
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
-			
+
 			const rawData: EnergyPriceResponse[] = await response.json();
 			console.log(`Successfully fetched ${rawData.length} price points from ${url}`);
-			
+
 			// Convert raw API data to our format
-			return rawData.map(item => ({
+			return rawData.map((item) => ({
 				timestamp: new Date(item.time_start),
 				nokPerKwh: item.NOK_per_kWh,
 				eurPerKwh: item.EUR_per_kWh,
 				exchangeRate: item.EXR,
 				zone: this.zone
 			}));
-			
 		} catch (error) {
 			console.error(`Failed to fetch prices for ${year}-${month}-${day}:`, error);
 			throw new Error(`Failed to fetch prices for ${year}-${month}-${day}: ${error}`);
@@ -165,18 +175,21 @@ export class EnergyPricesProvider {
 		const dates: Date[] = [];
 		const current = new Date(startDate);
 		current.setHours(0, 0, 0, 0); // Start at midnight
-		
+
 		const end = new Date(endDate);
 		end.setHours(0, 0, 0, 0); // End at midnight
-		
+
 		console.log(`Date range calculation: ${current.toISOString()} to ${end.toISOString()}`);
-		
+
 		while (current <= end) {
 			dates.push(new Date(current));
 			current.setDate(current.getDate() + 1);
 		}
-		
-		console.log(`Generated ${dates.length} dates:`, dates.map(d => d.toISOString().split('T')[0]));
+
+		console.log(
+			`Generated ${dates.length} dates:`,
+			dates.map((d) => d.toISOString().split('T')[0])
+		);
 		return dates;
 	}
 
@@ -225,11 +238,9 @@ export class EnergyPricesProvider {
 		console.log('=== ENERGY PRICES DEBUG ===');
 		console.log('Zone:', this.zone);
 		console.log('Total data points:', prices.length);
-		
-		const nokPrices = prices
-			.map(p => p.nokPerKwh)
-			.filter((p): p is number => p !== undefined);
-		
+
+		const nokPrices = prices.map((p) => p.nokPerKwh).filter((p): p is number => p !== undefined);
+
 		if (nokPrices.length > 0) {
 			console.log('NOK/kWh range:', {
 				min: Math.min(...nokPrices).toFixed(4),
@@ -237,7 +248,7 @@ export class EnergyPricesProvider {
 				avg: (nokPrices.reduce((a, b) => a + b, 0) / nokPrices.length).toFixed(4)
 			});
 		}
-		
+
 		console.log('First 3 prices:', prices.slice(0, 3));
 		console.log('===========================');
 	}

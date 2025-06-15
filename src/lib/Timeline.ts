@@ -68,16 +68,16 @@ class Timeline {
 		// Process each day in the timeline
 		const currentDay = new Date(startDate);
 		const twoHoursMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
-		
+
 		while (currentDay <= this.to) {
 			// For each day, create ticks for each specified hour
 			for (const hour of hours) {
 				const tickTime = new Date(currentDay);
 				tickTime.setHours(hour, 0, 0, 0);
-				
+
 				// Calculate time difference from now
 				const timeDiffFromNow = Math.abs(tickTime.getTime() - this.now.getTime());
-				
+
 				// Only add tick if it's within the timeline window and not within 2 hours of now
 				if (tickTime >= this.from && tickTime <= this.to && timeDiffFromNow >= twoHoursMs) {
 					ticks.push({
@@ -88,7 +88,7 @@ class Timeline {
 					});
 				}
 			}
-			
+
 			// Move to next day
 			currentDay.setDate(currentDay.getDate() + 1);
 		}
@@ -152,10 +152,12 @@ class Timeline {
 		}
 
 		// Helper function to determine text alignment and adjusted timestamp based on position
-		const getAlignmentAndTimestamp = (tickDate: Date): { align: 'start' | 'middle' | 'end', adjustedTs: Date } => {
+		const getAlignmentAndTimestamp = (
+			tickDate: Date
+		): { align: 'start' | 'middle' | 'end'; adjustedTs: Date } => {
 			const hoursFromStart = (tickDate.getTime() - this.from.getTime()) / (1000 * 60 * 60);
 			const hoursFromEnd = (this.to.getTime() - tickDate.getTime()) / (1000 * 60 * 60);
-			
+
 			if (hoursFromStart < 5) {
 				return { align: 'start', adjustedTs: new Date(this.from) };
 			}
@@ -200,7 +202,7 @@ class Timeline {
 		while (current <= this.to) {
 			const tickDate = new Date(current);
 			const { align, adjustedTs } = getAlignmentAndTimestamp(tickDate);
-			
+
 			ticks.push({
 				ts: adjustedTs,
 				tstr: '13:00',
@@ -253,7 +255,7 @@ class Timeline {
 		// Calculate width by getting x-coordinates for two consecutive hours
 		const now = new Date();
 		const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-		
+
 		return this.scale(oneHourLater) - this.scale(now);
 	}
 
@@ -265,18 +267,18 @@ class Timeline {
 	 */
 	getDayNightMarkers(dayStartHour: number = 7, nightStartHour: number = 23): TimeWindow[] {
 		const markers: TimeWindow[] = [];
-		
+
 		// Start from the beginning of the timeline
 		const current = new Date(this.from);
 		current.setMinutes(0, 0, 0);
-		
+
 		// Process the entire timeline
 		while (current < this.to) {
 			const currentHour = current.getHours();
-			
+
 			// Determine if we're starting in day or night
 			const isDay = currentHour >= dayStartHour && currentHour < nightStartHour;
-			
+
 			// Find the end of this period
 			const periodEnd = new Date(current);
 			if (isDay) {
@@ -295,10 +297,10 @@ class Timeline {
 					periodEnd.setDate(periodEnd.getDate() + 1);
 				}
 			}
-			
+
 			// Cap the period end at timeline end
 			const actualEnd = periodEnd > this.to ? new Date(this.to) : periodEnd;
-			
+
 			// Create the time window
 			const window: TimeWindow = {
 				from: {
@@ -313,13 +315,13 @@ class Timeline {
 				},
 				day: isDay
 			};
-			
+
 			markers.push(window);
-			
+
 			// Move to the next period
 			current.setTime(periodEnd.getTime());
 		}
-		
+
 		return markers;
 	}
 }

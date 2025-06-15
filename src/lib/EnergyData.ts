@@ -5,6 +5,22 @@ import type { TimeTick } from './types/time';
 import { loadConfig } from './config/ConfigLoader';
 
 /**
+ * Format energy price with appropriate suffix (kr or øre)
+ * @param nokPerKwh - Price in NOK per kWh
+ * @returns Formatted price string with suffix
+ */
+export function formatEnergyPrice(nokPerKwh: number): string {
+	if (nokPerKwh >= 1) {
+		// Use kr for prices 1 NOK and above
+		return `${nokPerKwh.toFixed(2)} kr`;
+	} else {
+		// Convert to øre for prices below 1 NOK (1 NOK = 100 øre)
+		const ore = Math.round(nokPerKwh * 100);
+		return `${ore} øre`;
+	}
+}
+
+/**
  * Configuration for EnergyData class
  */
 export interface EnergyConfig {
@@ -35,6 +51,7 @@ export interface EnergyDataResult {
 	// Strømpriser:
 	energyMarkers: TimeTick[];
 	energyScale: EnergyScaleInfo;
+	extremeEnergyMarkers: TimeTick[]; // Lokale min/max strømpriser
 }
 
 /**
@@ -54,7 +71,7 @@ export class EnergyData {
 	constructor(timeline: Timeline, config: EnergyConfig) {
 		this.timeline = timeline;
 		const appConfig = loadConfig();
-		
+
 		this.config = {
 			energyHeight: appConfig.visualization.layout.energyHeight || 80,
 			userAgent: 'Timeviz/1.0',
@@ -78,10 +95,14 @@ export class EnergyData {
 		const energyScale = this.createEnergyScale(rawEnergyData);
 
 		// Generer markers for strømpriser:
+		const energyMarkers = this.createEnergyMarkers(rawEnergyData, energyScale);
+		const extremeEnergyMarkers = this.getExtremePriceMarkers(energyMarkers);
+
 		return {
 			energyData: rawEnergyData,
-			energyMarkers: this.createEnergyMarkers(rawEnergyData, energyScale),
-			energyScale: this.getScaleInfo(energyScale)
+			energyMarkers,
+			energyScale: this.getScaleInfo(energyScale),
+			extremeEnergyMarkers
 		};
 	}
 
@@ -106,7 +127,7 @@ export class EnergyData {
 	private createEnergyScale(energyData: TimeTick[]): ValueScale {
 		const appConfig = loadConfig();
 		const maxEnergyPrice = appConfig.visualization.scales?.maxEnergyPrice || 2;
-		
+
 		const priceValues = energyData
 			.map((d) => d.nokPerKwh)
 			.filter((p): p is number => p !== undefined);
@@ -140,6 +161,91 @@ export class EnergyData {
 			...tick,
 			y: energyScale.scale(tick.nokPerKwh || 0)
 		}));
+	}
+
+	/**
+	 * Find extreme energy price markers (local min/max) within 24-hour windows
+	 * @param energyMarkers - Array of energy markers with coordinates
+	 * @returns Array of markers that are local extremes with max/min properties
+	 */
+	private getExtremePriceMarkers(energyMarkers: TimeTick[]): TimeTick[] {
+		const extremeMarkers: TimeTick[] = [];
+		const windowHours = 24; // 24-hour window (12 hours before + 12 hours after)
+		const windowMs = windowHours * 60 * 60 * 1000;
+
+		// Filter markers with valid price data
+		const validMarkers = energyMarkers.filter(
+			(marker) => marker.nokPerKwh !== undefined && marker.ts instanceof Date
+		);
+
+		for (let i = 0; i < validMarkers.length; i++) {
+			const currentMarker = validMarkers[i];
+			const currentTime = currentMarker.ts.getTime();
+			const currentPrice = currentMarker.nokPerKwh!;
+
+			// Find all markers within 24-hour window (12 hours before + 12 hours after)
+			const windowMarkers = validMarkers.filter((marker) => {
+				const markerTime = marker.ts.getTime();
+				const timeDiff = Math.abs(markerTime - currentTime);
+				return timeDiff <= windowMs / 2; // ±12 hours
+			});
+
+			if (windowMarkers.length < 3) continue; // Need at least 3 points for meaningful comparison
+
+			// Check if current marker is local maximum (highest price)
+			const isLocalMax = windowMarkers.every((marker) => marker.nokPerKwh! <= currentPrice);
+
+			// Check if current marker is local minimum (lowest price)
+			const isLocalMin = windowMarkers.every((marker) => marker.nokPerKwh! >= currentPrice);
+
+			// Only mark as extreme if it's clearly max or min (not equal to all others)
+			const hasVariation = windowMarkers.some((marker) => marker.nokPerKwh! !== currentPrice);
+
+			if (hasVariation && (isLocalMax || isLocalMin)) {
+				extremeMarkers.push({
+					...currentMarker,
+					priceMax: isLocalMax,
+					priceMin: isLocalMin
+				});
+			}
+		}
+
+		// Remove consecutive extremes of the same type to avoid clutter
+		return this.filterConsecutivePriceExtremes(extremeMarkers);
+	}
+
+	/**
+	 * Filter out consecutive extreme markers of the same type to reduce clutter
+	 * @param extremeMarkers - Array of extreme markers
+	 * @returns Filtered array with no consecutive same-type extremes
+	 */
+	private filterConsecutivePriceExtremes(extremeMarkers: TimeTick[]): TimeTick[] {
+		if (extremeMarkers.length <= 1) return extremeMarkers;
+
+		const filtered: TimeTick[] = [extremeMarkers[0]];
+
+		for (let i = 1; i < extremeMarkers.length; i++) {
+			const current = extremeMarkers[i];
+			const previous = filtered[filtered.length - 1];
+
+			// Add current marker if it's a different type than the previous
+			if ((current.priceMax && !previous.priceMax) || (current.priceMin && !previous.priceMin)) {
+				filtered.push(current);
+			} else {
+				// If same type, keep the one with more extreme price
+				if (current.priceMax && previous.priceMax && current.nokPerKwh! > previous.nokPerKwh!) {
+					filtered[filtered.length - 1] = current;
+				} else if (
+					current.priceMin &&
+					previous.priceMin &&
+					current.nokPerKwh! < previous.nokPerKwh!
+				) {
+					filtered[filtered.length - 1] = current;
+				}
+			}
+		}
+
+		return filtered;
 	}
 
 	/**
@@ -195,7 +301,7 @@ export class EnergyData {
 
 		console.log('Scale domain:', result.energyScale.min, 'to', result.energyScale.max);
 		console.log('Scale height:', result.energyScale.height);
-		
+
 		// Debug first few markers with input price -> output y mapping
 		console.log('First 5 price->y mappings:');
 		result.energyMarkers.slice(0, 5).forEach((marker, i) => {

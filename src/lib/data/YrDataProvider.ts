@@ -13,16 +13,16 @@ interface WeatherObservation {
 	uv?: number;
 	weatherSymbol?: string;
 	// TIMEBASERT NEDBØR:
-	precipitationAmount?: number;     // mm denne timen
-	precipitationAmountMax?: number;  // maks mm denne timen  
-	precipitationAmountMin?: number;  // min mm denne timen
+	precipitationAmount?: number; // mm denne timen
+	precipitationAmountMax?: number; // maks mm denne timen
+	precipitationAmountMin?: number; // min mm denne timen
 }
 
 interface FrostObservation {
 	time: string;
 	temperature: number;
 	station: string;
-	precipitationAmount?: number;     // mm denne timen
+	precipitationAmount?: number; // mm denne timen
 	uvIndex?: number;
 	uv?: number;
 }
@@ -114,7 +114,9 @@ export class YrDataProvider {
 				humidity: entry.data.instant.details.relative_humidity,
 				windSpeed: entry.data.instant.details.wind_speed,
 				uvIndex: entry.data.instant.details.ultraviolet_index_clear_sky,
-				uv: entry.data.instant.details.ultraviolet_index_clear_sky ? Math.round(entry.data.instant.details.ultraviolet_index_clear_sky) : undefined,
+				uv: entry.data.instant.details.ultraviolet_index_clear_sky
+					? Math.round(entry.data.instant.details.ultraviolet_index_clear_sky)
+					: undefined,
 				weatherSymbol: entry.data.next_1_hours?.summary?.symbol_code,
 				// TIMEBASERT NEDBØR FRA next_1_hours:
 				precipitationAmount: entry.data.next_1_hours?.details?.precipitation_amount,
@@ -122,20 +124,19 @@ export class YrDataProvider {
 				precipitationAmountMin: entry.data.next_1_hours?.details?.precipitation_amount_min
 			}));
 
-
 			// Filter basert på tidsvindu hvis oppgitt
 			if (timeWindow) {
 				timeseries = timeseries.filter((entry: WeatherObservation) => {
 					const entryTime = new Date(entry.time);
 					return entryTime >= timeWindow.from.ts && entryTime <= timeWindow.to.ts;
 				});
-				
+
 				// Spesialhåndtering: Fjern intervall-data fra siste tidspunkt
 				// fordi de representerer data utenfor tidsvinduet
 				timeseries = timeseries.map((entry: WeatherObservation) => {
 					const entryTime = new Date(entry.time);
 					const isLastTimePoint = entryTime.getTime() === timeWindow.to.ts.getTime();
-					
+
 					if (isLastTimePoint) {
 						// Behold instant-verdier, fjern intervall-verdier
 						return {
@@ -147,7 +148,7 @@ export class YrDataProvider {
 							precipitationAmountMin: undefined
 						};
 					}
-					
+
 					return entry;
 				});
 			}
@@ -209,10 +210,14 @@ export class YrDataProvider {
 			// Behandle data og filtrer basert på timeWindow hvis oppgitt
 			let temperatures = data.data.map((observation: FrostApiEntry) => {
 				// Frost API kan returnere flere observasjoner per tidspunkt
-				const tempObs = observation.observations.find(obs => obs.elementId === 'air_temperature');
-				const precipObs = observation.observations.find(obs => obs.elementId === 'sum(precipitation_amount P1H)');
-				const uvObs = observation.observations.find(obs => obs.elementId === 'ultraviolet_index_clear_sky');
-				
+				const tempObs = observation.observations.find((obs) => obs.elementId === 'air_temperature');
+				const precipObs = observation.observations.find(
+					(obs) => obs.elementId === 'sum(precipitation_amount P1H)'
+				);
+				const uvObs = observation.observations.find(
+					(obs) => obs.elementId === 'ultraviolet_index_clear_sky'
+				);
+
 				return {
 					time: observation.referenceTime,
 					temperature: tempObs?.value,
@@ -273,7 +278,7 @@ export class YrDataProvider {
 
 	/**
 	 * Konverterer prognosedata til TimeTick format
-	 * 
+	 *
 	 * VIKTIG TIDSVINDU-SEMANTIKK:
 	 * - Instant-verdier (temperatur, UV): inkluder hvis tid >= from && tid <= to
 	 * - Intervall-verdier (nedbør, værsymbol): inkluder hvis tid >= from && tid < to
@@ -295,7 +300,7 @@ export class YrDataProvider {
 			.map((forecast) => {
 				const time = new Date(forecast.time);
 				const isLastTimePoint = time.getTime() === timeWindow.to.ts.getTime();
-				
+
 				return {
 					ts: time,
 					tstr: this.formatTime(time),
@@ -317,7 +322,7 @@ export class YrDataProvider {
 
 	/**
 	 * Konverterer historiske data til TimeTick format
-	 * 
+	 *
 	 * HISTORISKE DATA-SEMANTIKK:
 	 * - Temperatur: instant-verdi på tidspunktet (korrekt: <= to)
 	 * - Nedbør: sum(precipitation_amount P1H) = den FOREGÅENDE timen (korrekt: <= to)

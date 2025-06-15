@@ -11,10 +11,10 @@ export interface WeatherConfig {
 	longitude: number;
 	frostClientId?: string;
 	userAgent?: string;
-	
+
 	// Konfigurerbare høyder for ulike skalaer:
-	temperatureHeight?: number;    // default: 100
-	precipitationHeight?: number;  // default: 60
+	temperatureHeight?: number; // default: 100
+	precipitationHeight?: number; // default: 60
 }
 
 /**
@@ -32,24 +32,24 @@ export interface ValueScaleInfo {
  */
 export interface WeatherDataResult {
 	// Rådata:
-	weatherData: TimeTick[];           // Komplett værdatasett
-	
+	weatherData: TimeTick[]; // Komplett værdatasett
+
 	// Temperatur:
 	temperatureMarkers: TimeTick[];
 	temperatureScale: ValueScaleInfo;
-	extremeTemperatureMarkers: TimeTick[];  // Lokale min/max temperaturer
-	
+	extremeTemperatureMarkers: TimeTick[]; // Lokale min/max temperaturer
+
 	// Nedbør:
 	precipitationMarkers: TimeTick[];
 	precipitationScale: ValueScaleInfo;
-	
+
 	// Værsymbol:
-	weatherSymbolMarkers: TimeTick[];   // Værsymboler med korrekt posisjonering
+	weatherSymbolMarkers: TimeTick[]; // Værsymboler med korrekt posisjonering
 }
 
 /**
  * WeatherData class - Unified weather data fetching and preparation
- * 
+ *
  * Handles all weather data types in a single, efficient operation:
  * - Fetches data from APIs once
  * - Creates appropriate ValueScales for each weather type
@@ -69,7 +69,7 @@ export class WeatherData {
 			userAgent: 'Timeviz/1.0',
 			...config
 		};
-		
+
 		this.weatherProvider = new YrDataProvider(
 			config.latitude,
 			config.longitude,
@@ -84,16 +84,16 @@ export class WeatherData {
 	async prepare(): Promise<WeatherDataResult> {
 		// ÉT API-kall henter alt værdata:
 		const rawWeatherData = await this.fetchAllWeatherData();
-		
+
 		// Opprett value scales for hver værtype:
 		const temperatureScale = this.createTemperatureScale(rawWeatherData);
 		const precipitationScale = this.createPrecipitationScale();
-		
+
 		// Generer markers for hver værtype:
 		const temperatureMarkers = this.createTemperatureMarkers(rawWeatherData, temperatureScale);
 		const extremeTemperatureMarkers = this.getExtremeTemperatureMarkers(temperatureMarkers);
 		const weatherSymbolMarkers = this.createWeatherSymbolMarkers(temperatureMarkers);
-		
+
 		return {
 			weatherData: rawWeatherData,
 			temperatureMarkers,
@@ -110,12 +110,12 @@ export class WeatherData {
 	 */
 	private async fetchAllWeatherData(): Promise<TimeTick[]> {
 		const timeWindow = this.timeline.getTimeWindow();
-		
+
 		// Kun ÉT kall til YrDataProvider som nå henter både temperatur og nedbør
 		const weatherData = await this.weatherProvider.fetchWeatherDataForTimeWindow(timeWindow);
-		
+
 		// Legg til x-koordinater fra timeline
-		return weatherData.map(tick => this.timeline.addXToTimeTick(tick));
+		return weatherData.map((tick) => this.timeline.addXToTimeTick(tick));
 	}
 
 	/**
@@ -123,13 +123,16 @@ export class WeatherData {
 	 */
 	private createTemperatureScale(weatherData: TimeTick[]): ValueScale {
 		const tempValues = weatherData
-			.map(d => d.temperature)
+			.map((d) => d.temperature)
 			.filter((t): t is number => t !== undefined);
-		
-		const tempRange = tempValues.length > 0 ? {
-			min: Math.min(...tempValues),
-			max: Math.max(...tempValues)
-		} : { min: 0, max: 20 };
+
+		const tempRange =
+			tempValues.length > 0
+				? {
+						min: Math.min(...tempValues),
+						max: Math.max(...tempValues)
+					}
+				: { min: 0, max: 20 };
 
 		return new ValueScale(tempRange.min, tempRange.max, this.config.temperatureHeight!);
 	}
@@ -141,20 +144,29 @@ export class WeatherData {
 		// Fast 5mm maksimum skala for nedbør, uavhengig av data
 		// Dette gir konsistent skala og lar store verdier "sprenge" skalaen
 		const precipRange = {
-			min: 0,   // Nedbør starter alltid fra 0
-			max: 5    // Fast 5mm maksimum
+			min: 0, // Nedbør starter alltid fra 0
+			max: 5 // Fast 5mm maksimum
 		};
 
 		// Ikke clamp - lar verdier over 5mm gå utenfor skalaen
 		// inverted=false for høyde-verdier (0mm = 0px høyde, 5mm = full høyde)
-		return new ValueScale(precipRange.min, precipRange.max, this.config.precipitationHeight!, false, false);
+		return new ValueScale(
+			precipRange.min,
+			precipRange.max,
+			this.config.precipitationHeight!,
+			false,
+			false
+		);
 	}
 
 	/**
 	 * Generate temperature markers with x,y coordinates
 	 */
-	private createTemperatureMarkers(weatherData: TimeTick[], temperatureScale: ValueScale): TimeTick[] {
-		return weatherData.map(tick => ({
+	private createTemperatureMarkers(
+		weatherData: TimeTick[],
+		temperatureScale: ValueScale
+	): TimeTick[] {
+		return weatherData.map((tick) => ({
 			...tick,
 			y: temperatureScale.scale(tick.temperature || 0)
 		}));
@@ -163,8 +175,11 @@ export class WeatherData {
 	/**
 	 * Generate precipitation markers with x,y coordinates
 	 */
-	private createPrecipitationMarkers(weatherData: TimeTick[], precipitationScale: ValueScale): TimeTick[] {
-		return weatherData.map(tick => ({
+	private createPrecipitationMarkers(
+		weatherData: TimeTick[],
+		precipitationScale: ValueScale
+	): TimeTick[] {
+		return weatherData.map((tick) => ({
 			...tick,
 			y: precipitationScale.scale(tick.precipitation || 0)
 		}));
@@ -175,7 +190,7 @@ export class WeatherData {
 	 * Weather symbols represent the NEXT hour, so they should be positioned:
 	 * - X: centered in the hour they represent (current time + 0.5 hours)
 	 * - Y: average temperature between current and next hour
-	 * 
+	 *
 	 * VIKTIG: YrDataProvider filtrerer nå bort weatherSymbol på siste tidspunkt
 	 * fordi det ville representere en time utenfor tidsvinduet.
 	 */
@@ -186,25 +201,25 @@ export class WeatherData {
 		for (let i = 0; i < temperatureMarkers.length; i++) {
 			const current = temperatureMarkers[i];
 			const next = temperatureMarkers[i + 1];
-			
+
 			// Skip if no weather symbol or no coordinates
 			// (weatherSymbol kan nå være undefined på siste tidspunkt - dette er korrekt)
 			if (!current.weatherSymbol || current.x === undefined || current.y === undefined) {
 				continue;
 			}
-			
+
 			// For the last marker, we don't have next temperature data
 			// So we skip it as the weather symbol would apply to unknown future data
 			if (!next || next.x === undefined || next.y === undefined) {
 				continue;
 			}
-			
+
 			// X position: centered in the hour the symbol represents (halfway to next marker)
-			const symbolX = current.x + (hourWidth / 2);
-			
+			const symbolX = current.x + hourWidth / 2;
+
 			// Y position: average temperature between current and next hour
 			const symbolY = (current.y + next.y) / 2;
-			
+
 			symbolMarkers.push({
 				...current,
 				x: symbolX,
@@ -224,41 +239,35 @@ export class WeatherData {
 		const extremeMarkers: TimeTick[] = [];
 		const windowHours = 12; // 12-hour window (6 hours before + 6 hours after)
 		const windowMs = windowHours * 60 * 60 * 1000;
-		
+
 		// Filter markers with valid temperature data
-		const validMarkers = temperatureMarkers.filter(marker => 
-			marker.temperature !== undefined && marker.ts instanceof Date
+		const validMarkers = temperatureMarkers.filter(
+			(marker) => marker.temperature !== undefined && marker.ts instanceof Date
 		);
-		
+
 		for (let i = 0; i < validMarkers.length; i++) {
 			const currentMarker = validMarkers[i];
 			const currentTime = currentMarker.ts.getTime();
 			const currentTemp = currentMarker.temperature!;
-			
+
 			// Find all markers within 12-hour window (6 hours before + 6 hours after)
-			const windowMarkers = validMarkers.filter(marker => {
+			const windowMarkers = validMarkers.filter((marker) => {
 				const markerTime = marker.ts.getTime();
 				const timeDiff = Math.abs(markerTime - currentTime);
 				return timeDiff <= windowMs / 2; // ±6 hours
 			});
-			
+
 			if (windowMarkers.length < 3) continue; // Need at least 3 points for meaningful comparison
-			
+
 			// Check if current marker is local maximum
-			const isLocalMax = windowMarkers.every(marker => 
-				marker.temperature! <= currentTemp
-			);
-			
+			const isLocalMax = windowMarkers.every((marker) => marker.temperature! <= currentTemp);
+
 			// Check if current marker is local minimum
-			const isLocalMin = windowMarkers.every(marker => 
-				marker.temperature! >= currentTemp
-			);
-			
+			const isLocalMin = windowMarkers.every((marker) => marker.temperature! >= currentTemp);
+
 			// Only mark as extreme if it's clearly max or min (not equal to all others)
-			const hasVariation = windowMarkers.some(marker => 
-				marker.temperature! !== currentTemp
-			);
-			
+			const hasVariation = windowMarkers.some((marker) => marker.temperature! !== currentTemp);
+
 			if (hasVariation && (isLocalMax || isLocalMin)) {
 				extremeMarkers.push({
 					...currentMarker,
@@ -267,11 +276,11 @@ export class WeatherData {
 				});
 			}
 		}
-		
+
 		// Remove consecutive extremes of the same type to avoid clutter
 		return this.filterConsecutiveExtremes(extremeMarkers);
 	}
-	
+
 	/**
 	 * Filter out consecutive extreme markers of the same type to reduce clutter
 	 * @param extremeMarkers - Array of extreme markers
@@ -279,13 +288,13 @@ export class WeatherData {
 	 */
 	private filterConsecutiveExtremes(extremeMarkers: TimeTick[]): TimeTick[] {
 		if (extremeMarkers.length <= 1) return extremeMarkers;
-		
+
 		const filtered: TimeTick[] = [extremeMarkers[0]];
-		
+
 		for (let i = 1; i < extremeMarkers.length; i++) {
 			const current = extremeMarkers[i];
 			const previous = filtered[filtered.length - 1];
-			
+
 			// Add current marker if it's a different type than the previous
 			if ((current.max && !previous.max) || (current.min && !previous.min)) {
 				filtered.push(current);
@@ -298,7 +307,7 @@ export class WeatherData {
 				}
 			}
 		}
-		
+
 		return filtered;
 	}
 
@@ -311,7 +320,7 @@ export class WeatherData {
 		const domain = valueScale.getDomain();
 		const range = valueScale.getRange();
 		const height = range[0]; // First value is the height (bottom of SVG)
-		
+
 		return {
 			height,
 			rowMarkers: skipRowMarkers ? [] : valueScale.getRowMarkers(),
@@ -325,16 +334,16 @@ export class WeatherData {
 	 */
 	logDebugInfo(result: WeatherDataResult) {
 		const timeWindow = this.timeline.getTimeWindow();
-		
+
 		console.log('=== UNIFIED WEATHER DATA DEBUG ===');
 		console.log('Time window:', {
 			from: timeWindow.from.ts,
 			to: timeWindow.to.ts
 		});
 		console.log('Total weather data points:', result.weatherData.length);
-		
+
 		const tempValues = result.weatherData
-			.map(d => d.temperature)
+			.map((d) => d.temperature)
 			.filter((t): t is number => t !== undefined);
 		console.log('Temperature points:', tempValues.length);
 		if (tempValues.length > 0) {
@@ -343,9 +352,9 @@ export class WeatherData {
 				max: Math.max(...tempValues)
 			});
 		}
-		
+
 		const precipValues = result.weatherData
-			.map(d => d.precipitation)
+			.map((d) => d.precipitation)
 			.filter((p): p is number => p !== undefined && p > 0);
 		console.log('Non-zero precipitation points:', precipValues.length);
 		if (precipValues.length > 0) {
@@ -354,7 +363,7 @@ export class WeatherData {
 				max: Math.max(...precipValues)
 			});
 		}
-		
+
 		console.log('First 3 weather points:', result.weatherData.slice(0, 3));
 		console.log('==================================');
 	}

@@ -1,17 +1,17 @@
 import type { SectionsConfig, SectionConfig, SectionPosition, SectionPositions } from './types';
-import { 
-	SectionStackError, 
-	SectionValidationError, 
-	CircularDependencyError, 
-	MissingSectionError 
+import {
+	SectionStackError,
+	SectionValidationError,
+	CircularDependencyError,
+	MissingSectionError
 } from './SectionStackError';
 
 /**
  * SectionStack manages the layout calculation for stacked sections with dependencies.
- * 
+ *
  * Features:
  * - Dependency resolution via 'from' references
- * - Dynamic height calculation via 'heightRel' arrays  
+ * - Dynamic height calculation via 'heightRel' arrays
  * - Circular dependency detection
  * - Comprehensive validation
  * - Fail-fast error handling
@@ -54,8 +54,9 @@ export class SectionStack {
 	 * Get total height of all sections
 	 */
 	getTotalHeight(): number {
-		return Object.values(this.calculated).reduce((max, section) => 
-			Math.max(max, section.y + section.height), 0
+		return Object.values(this.calculated).reduce(
+			(max, section) => Math.max(max, section.y + section.height),
+			0
 		);
 	}
 
@@ -104,12 +105,18 @@ export class SectionStack {
 
 		// Must have either height or heightRel
 		if (section.height === undefined && !section.heightRel) {
-			throw new SectionValidationError('Section must have either "height" or "heightRel" property', sectionId);
+			throw new SectionValidationError(
+				'Section must have either "height" or "heightRel" property',
+				sectionId
+			);
 		}
 
 		// Cannot have both height and heightRel
 		if (section.height !== undefined && section.heightRel) {
-			throw new SectionValidationError('Section cannot have both "height" and "heightRel" properties', sectionId);
+			throw new SectionValidationError(
+				'Section cannot have both "height" and "heightRel" properties',
+				sectionId
+			);
 		}
 
 		// Validate height if present
@@ -127,14 +134,20 @@ export class SectionStack {
 
 			for (const refId of section.heightRel) {
 				if (typeof refId !== 'string' || refId.trim() === '') {
-					throw new SectionValidationError('heightRel entries must be non-empty strings', sectionId);
+					throw new SectionValidationError(
+						'heightRel entries must be non-empty strings',
+						sectionId
+					);
 				}
 			}
 		}
 
 		// Validate from property
 		if (section.from !== null && (typeof section.from !== 'string' || section.from.trim() === '')) {
-			throw new SectionValidationError('from property must be null or a non-empty string', sectionId);
+			throw new SectionValidationError(
+				'from property must be null or a non-empty string',
+				sectionId
+			);
 		}
 	}
 
@@ -206,10 +219,10 @@ export class SectionStack {
 	private calculateAll(): SectionPositions {
 		// Topological sort to resolve dependencies
 		const sortedSections = this.topologicalSort();
-		
+
 		// Calculate positions in dependency order
 		const positions: SectionPositions = {};
-		
+
 		// First pass: calculate heights (including dynamic heights)
 		for (const sectionId of sortedSections) {
 			const section = this.sections[sectionId];

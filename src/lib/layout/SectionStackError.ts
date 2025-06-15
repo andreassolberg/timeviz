@@ -2,7 +2,10 @@
  * Custom error class for SectionStack validation and calculation errors
  */
 export class SectionStackError extends Error {
-	constructor(message: string, public sectionId?: string) {
+	constructor(
+		message: string,
+		public sectionId?: string
+	) {
 		super(message);
 		this.name = 'SectionStackError';
 	}
@@ -34,7 +37,10 @@ export class CircularDependencyError extends SectionStackError {
  */
 export class MissingSectionError extends SectionStackError {
 	constructor(referencedBy: string, missingSectionId: string) {
-		super(`Section '${referencedBy}' references missing section '${missingSectionId}'`, referencedBy);
+		super(
+			`Section '${referencedBy}' references missing section '${missingSectionId}'`,
+			referencedBy
+		);
 		this.name = 'MissingSectionError';
 	}
 }

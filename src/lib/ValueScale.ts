@@ -18,7 +18,13 @@ export class ValueScale {
 	 * @param height - Height of the scale area in pixels
 	 * @param clamp - Whether to clamp values outside domain (default: true)
 	 */
-	constructor(minValue: number, maxValue: number, height: number, clamp: boolean = true, inverted: boolean = true) {
+	constructor(
+		minValue: number,
+		maxValue: number,
+		height: number,
+		clamp: boolean = true,
+		inverted: boolean = true
+	) {
 		// Create d3 linear scale
 		// inverted=true (default): Y coordinates for positioning (0=top, height=bottom)
 		// inverted=false: Height values for bars (0=no height, height=full height)
@@ -45,7 +51,7 @@ export class ValueScale {
 	}
 
 	/**
-	 * Get the range (output range) of this scale  
+	 * Get the range (output range) of this scale
 	 * @returns [maxY, minY] (inverted for SVG coordinates)
 	 */
 	getRange(): [number, number] {
@@ -65,7 +71,7 @@ export class ValueScale {
 
 		// Calculate number of lines for each step size
 		const stepSizes = [10, 5, 1];
-		const lineCounts = stepSizes.map(step => {
+		const lineCounts = stepSizes.map((step) => {
 			const firstValue = Math.ceil(minValue / step) * step;
 			const lastValue = Math.floor(maxValue / step) * step;
 			return Math.max(0, Math.floor((lastValue - firstValue) / step) + 1);

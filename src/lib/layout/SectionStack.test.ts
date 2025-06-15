@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { SectionStack } from './SectionStack';
-import { SectionValidationError, CircularDependencyError, MissingSectionError } from './SectionStackError';
+import {
+	SectionValidationError,
+	CircularDependencyError,
+	MissingSectionError
+} from './SectionStackError';
 
 describe('SectionStack', () => {
 	it('should calculate positions correctly for simple configuration', () => {

@@ -4,10 +4,10 @@
 export interface SectionConfig {
 	/** Fixed height in pixels */
 	height?: number;
-	
+
 	/** Array of section IDs to sum heights from for dynamic height calculation */
 	heightRel?: string[];
-	
+
 	/** Section ID to position this section relative to (null for root sections) */
 	from: string | null;
 }
@@ -18,7 +18,7 @@ export interface SectionConfig {
 export interface SectionPosition {
 	/** Y coordinate in pixels */
 	y: number;
-	
+
 	/** Height in pixels */
 	height: number;
 }
