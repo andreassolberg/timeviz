@@ -2,13 +2,14 @@ import Timeline from '$lib/Timeline';
 import EnergyData from '$lib/EnergyData';
 import { PriceZone } from '$lib/data/EnergyPricesProvider';
 import { env } from '$env/dynamic/private';
-import type { PageServerLoad } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { loadConfig } from '$lib/config/ConfigLoader';
 
 export const load: PageServerLoad = async () => {
 	try {
 		// Load configuration
 		const config = loadConfig();
-		
+
 		// Read environment variables
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
 		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
@@ -26,7 +27,7 @@ export const load: PageServerLoad = async () => {
 			userAgent,
 			energyHeight: 80
 		});
-		
+
 		const energyResult = await energyData.prepare();
 
 		// Debug logging
@@ -43,10 +44,9 @@ export const load: PageServerLoad = async () => {
 			zone: energyArea,
 			success: true
 		};
-		
 	} catch (error) {
 		console.error('Error loading energy data:', error);
-		
+
 		return {
 			timeline: {
 				width: 0,

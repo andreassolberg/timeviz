@@ -93,7 +93,8 @@ export const load: PageServerLoad = async () => {
 				hourTicks: timeline.getHourTicks(),
 				dayLabelTicks: timeline.getDayLabelTicks(),
 				nowX: timeline.getNowX(),
-				hourWidth: timeline.getHourWidth()
+				hourWidth: timeline.getHourWidth(),
+				dayNightMarkers: []
 			},
 			weatherData: [],
 			temperatureMarkers: [],
@@ -127,6 +128,43 @@ export const load: PageServerLoad = async () => {
 			location: {
 				latitude: parseFloat(env.LAT || '63.4305'),
 				longitude: parseFloat(env.LON || '10.3951')
+			},
+			config: {
+				data: {
+					timeline: { hoursPast: 48, hoursFuture: 48 }
+				},
+				visualization: {
+					fontSize: {
+						temperatureExtremes: 8,
+						energyExtremes: 8,
+						hourTicks: 6,
+						dayLabels: 12,
+						scaleLabels: 8,
+						uvIndex: 6
+					},
+					colors: {
+						temperatureMax: '#dc2626',
+						temperatureMin: '#2563eb',
+						temperatureLine: '#dc2626',
+						energyPriceMax: '#dc2626',
+						energyPriceMin: '#16a34a',
+						solar: '#f59e0b',
+						precipitation: 'rgba(54, 162, 235, 0.7)'
+					},
+					layout: {
+						temperatureHeight: 100,
+						precipitationHeight: 60,
+						solarHeight: 80,
+						energyHeight: 80
+					},
+					sections: {
+						main: { height: 100, from: null },
+						temperature: { height: 100, from: null },
+						solar: { height: 80, from: null },
+						energy: { height: 80, from: null },
+						header: { height: 40, from: null }
+					}
+				}
 			},
 			error: 'Could not load weather data'
 		};
