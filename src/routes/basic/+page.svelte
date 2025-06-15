@@ -11,6 +11,7 @@
 		.domain([3, 6, 8, 11]) // Breakpoints: moderate, high, very high, extreme
 		.range(['#059669', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']); // darker green, orange, red, dark red, purple
 
+
 	// Destructure data from server
 	const {
 		timeline,
@@ -114,7 +115,8 @@
 				fill="#f59e0b"
 				stroke="#f59e0b"
 				opacity={0.3}
-				stroke-width={0}
+				stroke-width={1}
+				stroke-opacity={0.3}
 				transform="translate(0, 50) "
 			/>
 		{/if}

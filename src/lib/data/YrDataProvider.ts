@@ -23,6 +23,8 @@ interface FrostObservation {
 	temperature: number;
 	station: string;
 	precipitationAmount?: number;     // mm denne timen
+	uvIndex?: number;
+	uv?: number;
 }
 
 interface LocationforecastEntry {
@@ -120,6 +122,7 @@ export class YrDataProvider {
 				precipitationAmountMin: entry.data.next_1_hours?.details?.precipitation_amount_min
 			}));
 
+
 			// Filter basert på tidsvindu hvis oppgitt
 			if (timeWindow) {
 				timeseries = timeseries.filter((entry: WeatherObservation) => {
@@ -167,7 +170,7 @@ export class YrDataProvider {
 		const endISO = endTime.toISOString();
 
 		// Frost API URL for observasjoner - bruker nærmeste stasjon
-		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount P1H)`;
+		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount P1H),ultraviolet_index_clear_sky`;
 
 		try {
 			const response = await fetch(url, {
@@ -187,11 +190,14 @@ export class YrDataProvider {
 				// Frost API kan returnere flere observasjoner per tidspunkt
 				const tempObs = observation.observations.find(obs => obs.elementId === 'air_temperature');
 				const precipObs = observation.observations.find(obs => obs.elementId === 'sum(precipitation_amount P1H)');
+				const uvObs = observation.observations.find(obs => obs.elementId === 'ultraviolet_index_clear_sky');
 				
 				return {
 					time: observation.referenceTime,
 					temperature: tempObs?.value,
 					precipitationAmount: precipObs?.value,
+					uvIndex: uvObs?.value,
+					uv: uvObs?.value ? Math.round(uvObs.value) : undefined,
 					station: observation.sourceId
 				};
 			});
@@ -289,6 +295,8 @@ export class YrDataProvider {
 				tstr: this.formatTime(new Date(obs.time)),
 				temperature: obs.temperature,
 				precipitation: obs.precipitationAmount,
+				uvIndex: obs.uvIndex,
+				uv: obs.uv,
 				station: obs.station,
 				dataType: 'historical'
 			}));
