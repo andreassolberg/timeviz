@@ -2,7 +2,8 @@
 	"data": {
 		"timeline": {
 			"hoursPast": 48,
-			"hoursFuture": 48
+			"hoursFuture": 48,
+			"fixedNow": "2024-01-15T14:00:00+01:00"
 		}
 	},
 	"visualization": {
@@ -42,7 +43,7 @@
 			"energyHeight": 80
 		},
 		"scales": {
-			"maxEnergyPrice": 1
+			"maxEnergyPrice": 2
 		},
 		"timeline": {
 			"dayWidth": 240

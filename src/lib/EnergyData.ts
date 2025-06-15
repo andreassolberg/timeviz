@@ -149,8 +149,8 @@ export class EnergyData {
 			scaledMax = maxEnergyPrice;
 		}
 
-		// For bar charts: invert domain so 0 NOK -> y=0 and max NOK -> y=height
-		return new ValueScale(scaledMax, scaledMin, this.config.energyHeight!);
+		// For bar charts: use non-inverted scale so 0 NOK -> y=0 and max NOK -> y=height
+		return new ValueScale(scaledMin, scaledMax, this.config.energyHeight!, true, false);
 	}
 
 	/**

@@ -309,7 +309,7 @@
 						{#if marker.nokPerKwh !== undefined && marker.nokPerKwh > 0 && marker.x !== undefined && marker.y !== undefined}
 							<rect
 								x={marker.x}
-								y={sectionPositions.energy.height - marker.y}
+								y={energyScale.height - marker.y}
 								width={hourWidth}
 								height={marker.y}
 								fill="rgba(255, 165, 0, 0.7)"
@@ -322,7 +322,7 @@
 							{#if marker.x !== undefined}
 								<rect
 									x={marker.x}
-									y={sectionPositions.energy.height - 10}
+									y={energyScale.height - 10}
 									width={hourWidth}
 									height={10}
 									fill="red"
@@ -352,9 +352,9 @@
 					{#each energyScale.rowMarkers as marker}
 						<line
 							x1={0}
-							y1={sectionPositions.energy.height - marker.y}
+							y1={energyScale.height - marker.y}
 							x2={timeline.width}
-							y2={sectionPositions.energy.height - marker.y}
+							y2={energyScale.height - marker.y}
 							stroke="#ffa500"
 							stroke-width="1"
 							stroke-dasharray="2,2"
@@ -362,7 +362,7 @@
 						/>
 						<text
 							x={timeline.width - 70}
-							y={sectionPositions.energy.height - marker.y}
+							y={energyScale.height - marker.y}
 							font-family="sans-serif"
 							font-size="8"
 							fill="#ff8c00"
@@ -382,7 +382,7 @@
 								<!-- Price maximum marker (expensive - red, above bar) -->
 								<text
 									x={marker.x + hourWidth / 2}
-									y={sectionPositions.energy.height - marker.y - 8}
+									y={energyScale.height - marker.y - 8}
 									font-family="sans-serif"
 									font-size={config.visualization.fontSize.energyExtremes}
 									font-weight="bold"
@@ -400,7 +400,7 @@
 								<!-- Price minimum marker (cheap - green, below bar) -->
 								<text
 									x={marker.x + hourWidth / 2}
-									y={sectionPositions.energy.height - marker.y + 8}
+									y={energyScale.height - marker.y + 8}
 									font-family="sans-serif"
 									font-size={config.visualization.fontSize.energyExtremes}
 									font-weight="bold"
