@@ -43,7 +43,7 @@ export const load: PageServerLoad = async () => {
 		const solarData = new SolarData(timeline, {
 			latitude,
 			longitude,
-			solarHeight: 20 // Height for solar visualization area
+			solarHeight: config.visualization.sections?.solar?.height || 80 // Use config height
 		});
 		const solarResult = await solarData.prepare();
 
@@ -75,7 +75,7 @@ export const load: PageServerLoad = async () => {
 			...result, // weatherData, temperatureMarkers, temperatureScale, precipitationMarkers, precipitationScale
 			...solarResult, // solarMarkers, solarScale
 			...energyResult, // energyMarkers, energyScale
-			config: config.visualization, // Pass visualization config to client
+			config: config, // Pass full config to client
 			location: {
 				latitude,
 				longitude

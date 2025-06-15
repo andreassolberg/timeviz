@@ -6,6 +6,18 @@
 		}
 	},
 	"visualization": {
+		"sections": {
+			"header": { "height": 20, "from": null },
+			"solar": { "height": 30, "from": "header" },
+			"padding0": { "height": 30, "from": "solar" },
+			"temperature": { "height": 150, "from": "padding0" },
+			"padding1": { "height": 30, "from": "temperature" },
+			"energy": { "height": 0, "from": "padding1" },
+			"main": {
+				"heightRel": ["padding0", "temperature", "padding1", "energy"],
+				"from": "solar"
+			}
+		},
 		"fontSize": {
 			"temperatureExtremes": 8,
 			"hourTicks": 6,

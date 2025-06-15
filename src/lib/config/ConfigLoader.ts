@@ -12,6 +12,13 @@ export interface AppConfig {
 		};
 	};
 	visualization: {
+		sections?: {
+			[sectionId: string]: {
+				height?: number;
+				heightRel?: string[];
+				from: string | null;
+			};
+		};
 		fontSize: {
 			temperatureExtremes: number;
 			hourTicks: number;
@@ -164,6 +171,13 @@ function mergeConfig(defaultConfig: AppConfig, userConfig: Partial<AppConfig>): 
 			merged.visualization.timeline = {
 				...merged.visualization.timeline,
 				...userConfig.visualization.timeline
+			};
+		}
+		
+		if (userConfig.visualization.sections) {
+			merged.visualization.sections = {
+				...merged.visualization.sections,
+				...userConfig.visualization.sections
 			};
 		}
 	}
