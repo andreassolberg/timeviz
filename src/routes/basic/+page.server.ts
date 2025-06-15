@@ -18,10 +18,16 @@ export const load: PageServerLoad = async () => {
 		const frostClientId = env.FROST_CLIENT_ID;
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
 		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
+		
+		// Homey integration (optional)
+		const homeyToken = env.HOMEY_TOKEN;
+		const homeyId = env.HOMEY_ID;
+		const greenhouseDeviceId = '86d16c56-6190-4a77-9d7f-1d8a46355fc6'; // Hardcoded greenhouse device ID
 
 		console.log('Environment check:', {
 			hasFrostClientId: !!frostClientId,
 			frostClientIdLength: frostClientId?.length || 0,
+			hasHomeyIntegration: !!(homeyToken && homeyId),
 			usingFixedTime: !!config.data.timeline.fixedNow
 		});
 
@@ -33,14 +39,18 @@ export const load: PageServerLoad = async () => {
 			config.data.timeline.fixedNow
 		);
 
-		// Create unified weather data handler
+		// Create unified weather data handler with optional Homey integration
 		const weatherData = new WeatherData(timeline, {
 			latitude,
 			longitude,
 			frostClientId,
 			userAgent,
 			temperatureHeight: 100,
-			precipitationHeight: 60
+			precipitationHeight: 60,
+			// Optional Homey integration
+			homeyToken,
+			homeyId,
+			greenhouseDeviceId: homeyToken && homeyId ? greenhouseDeviceId : undefined
 		});
 
 		// Fetch and prepare all weather data in single operation
@@ -117,6 +127,8 @@ export const load: PageServerLoad = async () => {
 				max: 20
 			},
 			extremeTemperatureMarkers: [],
+			greenhouseTemperatureMarkers: [],
+			extremeGreenhouseTemperatureMarkers: [],
 			weatherSymbolMarkers: [],
 			precipitationMarkers: [],
 			precipitationScale: {

@@ -1,4 +1,5 @@
 import { YrDataProvider } from './data/YrDataProvider';
+import { HomeyDataProvider } from './data/HomeyDataProvider';
 import ValueScale from './ValueScale';
 import Timeline from './Timeline';
 import type { TimeTick } from './types/time';
@@ -15,6 +16,11 @@ export interface WeatherConfig {
 	// Konfigurerbare høyder for ulike skalaer:
 	temperatureHeight?: number; // default: 100
 	precipitationHeight?: number; // default: 60
+
+	// Homey smart home integration (optional):
+	homeyToken?: string;
+	homeyId?: string;
+	greenhouseDeviceId?: string; // Device ID for greenhouse temperature sensor
 }
 
 /**
@@ -39,6 +45,10 @@ export interface WeatherDataResult {
 	temperatureScale: ValueScaleInfo;
 	extremeTemperatureMarkers: TimeTick[]; // Lokale min/max temperaturer
 
+	// Drivhus temperatur (Homey integration):
+	greenhouseTemperatureMarkers?: TimeTick[]; // Historiske temperaturdata fra drivhus
+	extremeGreenhouseTemperatureMarkers?: TimeTick[]; // Lokale min/max for drivhus
+
 	// Nedbør:
 	precipitationMarkers: TimeTick[];
 	precipitationScale: ValueScaleInfo;
@@ -60,6 +70,7 @@ export interface WeatherDataResult {
 export class WeatherData {
 	private timeline: Timeline;
 	private weatherProvider: YrDataProvider;
+	private homeyProvider: HomeyDataProvider | null;
 	private config: WeatherConfig;
 
 	constructor(timeline: Timeline, config: WeatherConfig) {
@@ -77,22 +88,48 @@ export class WeatherData {
 			config.frostClientId,
 			this.config.userAgent
 		);
+
+		// Initialize Homey provider if configured
+		this.homeyProvider = null;
+		if (config.homeyToken && config.homeyId && config.greenhouseDeviceId) {
+			this.homeyProvider = new HomeyDataProvider({
+				token: config.homeyToken,
+				homeyId: config.homeyId,
+				greenhouseDeviceId: config.greenhouseDeviceId,
+				userAgent: this.config.userAgent
+			});
+		}
 	}
 
 	/**
 	 * Fetch and prepare all weather data in a single operation
 	 */
 	async prepare(): Promise<WeatherDataResult> {
-		// ÉT API-kall henter alt værdata:
-		const rawWeatherData = await this.fetchAllWeatherData();
+		const timeWindow = this.timeline.getTimeWindow();
 
-		// Opprett value scales for hver værtype:
-		const temperatureScale = this.createTemperatureScale(rawWeatherData);
+		// Fetch weather data and greenhouse data in parallel
+		const [rawWeatherData, rawGreenhouseData] = await Promise.all([
+			this.fetchAllWeatherData(),
+			this.fetchGreenhouseData()
+		]);
+
+		// Create combined temperature scale including both weather and greenhouse data
+		const temperatureScale = this.createCombinedTemperatureScale(rawWeatherData, rawGreenhouseData);
 		const precipitationScale = this.createPrecipitationScale();
 
-		// Generer markers for hver værtype:
+		// Generate markers for weather data
 		const temperatureMarkers = this.createTemperatureMarkers(rawWeatherData, temperatureScale);
 		const extremeTemperatureMarkers = this.getExtremeTemperatureMarkers(temperatureMarkers);
+
+		// Generate markers for greenhouse data
+		const greenhouseTemperatureMarkers = rawGreenhouseData.length > 0 
+			? this.createGreenhouseTemperatureMarkers(rawGreenhouseData, temperatureScale)
+			: undefined;
+		const extremeGreenhouseTemperatureMarkers = greenhouseTemperatureMarkers 
+			? this.getExtremeTemperatureMarkers(greenhouseTemperatureMarkers)
+			: undefined;
+
+		// Generate other markers
 		const precipitationMarkers = this.createPrecipitationMarkers(rawWeatherData, precipitationScale);
 		const extremePrecipitationMarkers = this.getExtremePrecipitationMarkers(precipitationMarkers);
 		const weatherSymbolMarkers = this.createWeatherSymbolMarkers(temperatureMarkers);
@@ -102,6 +139,8 @@ export class WeatherData {
 			temperatureMarkers,
 			temperatureScale: this.getScaleInfo(temperatureScale),
 			extremeTemperatureMarkers,
+			greenhouseTemperatureMarkers,
+			extremeGreenhouseTemperatureMarkers,
 			precipitationMarkers,
 			precipitationScale: this.getScaleInfo(precipitationScale, true), // true = skip row markers
 			extremePrecipitationMarkers,
@@ -123,20 +162,59 @@ export class WeatherData {
 	}
 
 	/**
-	 * Create ValueScale for temperature data
+	 * Fetch greenhouse temperature data from Homey if configured
+	 */
+	private async fetchGreenhouseData(): Promise<TimeTick[]> {
+		if (!this.homeyProvider) {
+			return [];
+		}
+
+		const timeWindow = this.timeline.getTimeWindow();
+		
+		try {
+			// Use the new complete data method that includes current temperature
+			const greenhouseData = await this.homeyProvider.fetchCompleteGreenhouseData(timeWindow);
+			
+			// Add x-coordinates from timeline
+			return greenhouseData.map((tick) => this.timeline.addXToTimeTick(tick));
+		} catch (error) {
+			console.error('Error fetching greenhouse data:', error);
+			return [];
+		}
+	}
+
+	/**
+	 * Create ValueScale for temperature data (legacy method for backward compatibility)
 	 */
 	private createTemperatureScale(weatherData: TimeTick[]): ValueScale {
-		const tempValues = weatherData
+		return this.createCombinedTemperatureScale(weatherData, []);
+	}
+
+	/**
+	 * Create ValueScale for combined temperature data (weather + greenhouse)
+	 */
+	private createCombinedTemperatureScale(weatherData: TimeTick[], greenhouseData: TimeTick[]): ValueScale {
+		// Combine temperature values from both weather and greenhouse data
+		const weatherTempValues = weatherData
 			.map((d) => d.temperature)
 			.filter((t): t is number => t !== undefined);
 
+		const greenhouseTempValues = greenhouseData
+			.map((d) => d.temperature)
+			.filter((t): t is number => t !== undefined);
+
+		const allTempValues = [...weatherTempValues, ...greenhouseTempValues];
+
 		const tempRange =
-			tempValues.length > 0
+			allTempValues.length > 0
 				? {
-						min: Math.min(...tempValues),
-						max: Math.max(...tempValues)
+						min: Math.min(...allTempValues),
+						max: Math.max(...allTempValues)
 					}
 				: { min: 0, max: 20 };
+
+		console.log(`Temperature scale created with range: ${tempRange.min}°C to ${tempRange.max}°C`);
+		console.log(`Weather temps: ${weatherTempValues.length}, Greenhouse temps: ${greenhouseTempValues.length}`);
 
 		return new ValueScale(tempRange.min, tempRange.max, this.config.temperatureHeight!);
 	}
@@ -171,6 +249,19 @@ export class WeatherData {
 		temperatureScale: ValueScale
 	): TimeTick[] {
 		return weatherData.map((tick) => ({
+			...tick,
+			y: temperatureScale.scale(tick.temperature || 0)
+		}));
+	}
+
+	/**
+	 * Generate greenhouse temperature markers with x,y coordinates
+	 */
+	private createGreenhouseTemperatureMarkers(
+		greenhouseData: TimeTick[],
+		temperatureScale: ValueScale
+	): TimeTick[] {
+		return greenhouseData.map((tick) => ({
 			...tick,
 			y: temperatureScale.scale(tick.temperature || 0)
 		}));

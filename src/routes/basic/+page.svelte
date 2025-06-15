@@ -22,6 +22,8 @@
 		temperatureMarkers,
 		temperatureScale,
 		extremeTemperatureMarkers,
+		greenhouseTemperatureMarkers,
+		extremeGreenhouseTemperatureMarkers,
 		precipitationMarkers,
 		precipitationScale,
 		extremePrecipitationMarkers,
@@ -46,6 +48,7 @@
 	let totalHeight: number;
 	let iconWidth: number;
 	let temperaturePath: string;
+	let greenhouseTemperaturePath: string;
 	let solarPath: string;
 
 	try {
@@ -85,6 +88,15 @@
 						.x((d) => d.x)
 						.y((d) => d.y)
 						.curve(curveMonotoneX)(temperatureMarkers) || ''
+				: '';
+
+		// Generate greenhouse temperature path
+		greenhouseTemperaturePath =
+			greenhouseTemperatureMarkers && greenhouseTemperatureMarkers.length > 0
+				? line<any>()
+						.x((d) => d.x)
+						.y((d) => d.y)
+						.curve(curveMonotoneX)(greenhouseTemperatureMarkers) || ''
 				: '';
 
 		// Generate solar altitude path as filled area
@@ -129,6 +141,12 @@
 			energyScale,
 			firstEnergyMarker: energyMarkers?.[0],
 			sampleMarkers: energyMarkers?.slice(0, 3)
+		});
+		console.log('Greenhouse data:', {
+			greenhouseTemperatureMarkers: greenhouseTemperatureMarkers?.length || 0,
+			extremeGreenhouseTemperatureMarkers: extremeGreenhouseTemperatureMarkers?.length || 0,
+			firstGreenhouseMarker: greenhouseTemperatureMarkers?.[0],
+			sampleMarkers: greenhouseTemperatureMarkers?.slice(0, 3)
 		});
 	} catch (appError) {
 		console.error('Application initialization error:', appError);
@@ -257,6 +275,17 @@
 				{#if temperatureMarkers && temperatureScale && temperaturePath}
 					<path d={temperaturePath} fill="none" stroke="#dc2626" stroke-width={1} />
 				{/if}
+
+				<!-- Greenhouse temperature path -->
+				{#if greenhouseTemperatureMarkers && temperatureScale && greenhouseTemperaturePath}
+					<path
+						d={greenhouseTemperaturePath}
+						fill="none"
+						stroke="#22c55e"
+						stroke-width={1}
+						stroke-dasharray="4,4"
+					/>
+				{/if}
 			</g>
 
 			<g id="precipitation" transform="translate(0, {sectionPositions.main.y})">
@@ -303,7 +332,6 @@
 			</g>
 
 			<g id="energy" transform="translate(0, {sectionPositions.energy.y})">
-				
 				<!-- Energy price bars -->
 				{#if energyMarkers && energyMarkers.length > 0}
 					{#each energyMarkers as marker, i}
@@ -473,9 +501,11 @@
 				{#if extremeTemperatureMarkers && extremeTemperatureMarkers.length > 0}
 					{#each extremeTemperatureMarkers as marker}
 						{#if marker.x !== undefined && marker.y !== undefined}
+							{@const isHistorical = marker.dataType === 'historical'}
+							{@const yOffset = marker.max ? -(isHistorical ? 8 : 16) : isHistorical ? 8 : 16}
 							<text
 								x={marker.x}
-								y={marker.y + (marker.max ? -16 : 16)}
+								y={marker.y + yOffset}
 								font-family="sans-serif"
 								font-size={config.visualization.fontSize.temperatureExtremes}
 								font-weight="bold"
@@ -490,6 +520,50 @@
 							>
 								{marker.temperature?.toFixed(1)}°
 							</text>
+						{/if}
+					{/each}
+				{/if}
+
+				<!-- Extreme greenhouse temperature labels (only max, not min) -->
+				{#if extremeGreenhouseTemperatureMarkers && extremeGreenhouseTemperatureMarkers.length > 0}
+					{#each extremeGreenhouseTemperatureMarkers as marker}
+						{#if marker.x !== undefined && marker.y !== undefined && marker.max}
+							<text
+								x={marker.x}
+								y={marker.y - 7}
+								font-family="sans-serif"
+								font-size={config.visualization.fontSize.temperatureExtremes}
+								font-weight="bold"
+								fill="#22c55e"
+								stroke="white"
+								stroke-width="2"
+								paint-order="stroke fill"
+								dominant-baseline="central"
+								text-anchor="middle"
+							>
+								{marker.temperature?.toFixed(1)}°
+							</text>
+						{/if}
+					{/each}
+				{/if}
+
+				<!-- Current greenhouse temperature marker (real-time, no text) -->
+				{#if greenhouseTemperatureMarkers && greenhouseTemperatureMarkers.length > 0}
+					{#each greenhouseTemperatureMarkers as marker}
+						{#if marker.station === 'greenhouse-current' && marker.x !== undefined && marker.y !== undefined}
+							<!-- Current temperature circle marker -->
+							<circle
+								cx={marker.x}
+								cy={marker.y}
+								r="3"
+								fill="#22c55e"
+								stroke="white"
+								stroke-width="1"
+							>
+								<title
+									>Current greenhouse temperature: {marker.temperature?.toFixed(1)}°C at {marker.tstr}</title
+								>
+							</circle>
 						{/if}
 					{/each}
 				{/if}
@@ -543,12 +617,17 @@
 				{/if}
 			</g>
 		</SVGViz>
-		
+
 		<!-- Fixed time indicator -->
 		{#if timeline.isFixedTime}
 			<div class="fixed-time-indicator">
-				<p>📌 Using fixed timestamp: <strong>{new Date(timeline.now).toLocaleString('no-NO')}</strong></p>
-				<p class="fixed-time-hint">Timeline is locked to this specific point in time for historical analysis.</p>
+				<p>
+					📌 Using fixed timestamp: <strong>{new Date(timeline.now).toLocaleString('no-NO')}</strong
+					>
+				</p>
+				<p class="fixed-time-hint">
+					Timeline is locked to this specific point in time for historical analysis.
+				</p>
 			</div>
 		{/if}
 	{/if}
