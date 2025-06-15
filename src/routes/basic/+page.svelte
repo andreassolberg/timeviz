@@ -4,6 +4,7 @@
 	import { scaleLinear } from 'd3-scale';
 	import { getIconFilename } from '$lib/weatherSymbolMapping';
 	import { SectionStack } from '$lib/layout';
+	import { formatEnergyPrice } from '$lib/EnergyData';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -28,6 +29,7 @@
 		solarScale,
 		energyMarkers,
 		energyScale,
+		extremeEnergyMarkers,
 		config,
 		location,
 		error
@@ -116,8 +118,10 @@
 		});
 		console.log('Timeline window check:', {
 			timelineFromTo: `${timeline.hourTicks?.[0]?.tstr} → ${timeline.hourTicks?.[timeline.hourTicks?.length - 1]?.tstr}`,
-			lastTemperatureHasSymbol: temperatureMarkers?.[temperatureMarkers?.length - 1]?.weatherSymbol !== undefined,
-			lastTemperatureHasPrecipitation: temperatureMarkers?.[temperatureMarkers?.length - 1]?.precipitation !== undefined
+			lastTemperatureHasSymbol:
+				temperatureMarkers?.[temperatureMarkers?.length - 1]?.weatherSymbol !== undefined,
+			lastTemperatureHasPrecipitation:
+				temperatureMarkers?.[temperatureMarkers?.length - 1]?.precipitation !== undefined
 		});
 		console.log('Energy data:', {
 			energyMarkers: energyMarkers?.length || 0,
@@ -145,14 +149,16 @@
 				<!-- Day/Night background rectangles spanning main content area -->
 				{#if dayNightMarkers && dayNightMarkers.length > 0}
 					{#each dayNightMarkers as marker}
-						<rect
-							x={marker.from.x}
-							y={sectionPositions.main.y}
-							width={marker.to.x - marker.from.x}
-							height={sectionPositions.main.height}
-							fill={marker.day ? 'rgba(255, 255, 0, 0.03)' : 'rgba(0, 0, 0, 0.1)'}
-							opacity="0.3"
-						/>
+						{#if marker.from.x !== undefined && marker.to.x !== undefined}
+							<rect
+								x={marker.from.x}
+								y={sectionPositions.main.y}
+								width={marker.to.x - marker.from.x}
+								height={sectionPositions.main.height}
+								fill={marker.day ? 'rgba(255, 255, 0, 0.03)' : 'rgba(0, 0, 0, 0.1)'}
+								opacity="0.3"
+							/>
+						{/if}
 					{/each}
 				{/if}
 			</g>
@@ -235,6 +241,10 @@
 						font-size={6}
 						text-anchor="middle"
 						fill="#333"
+						stroke="white"
+						stroke-width="2"
+						stroke-opacity={0.4}
+						paint-order="stroke fill"
 						alignment-baseline="middle"
 						dominant-baseline="central">{tick.tstr}</text
 					>
@@ -339,6 +349,50 @@
 						</text>
 					{/each}
 				{/if}
+
+				<!-- Energy price extreme markers -->
+				{#if extremeEnergyMarkers && extremeEnergyMarkers.length > 0}
+					{#each extremeEnergyMarkers as marker}
+						{#if marker.x !== undefined && marker.y !== undefined && marker.nokPerKwh !== undefined}
+							{#if marker.priceMax}
+								<!-- Price maximum marker (expensive - red, above bar) -->
+								<text
+									x={marker.x + hourWidth / 2}
+									y={sectionPositions.energy.height - marker.y - 8}
+									font-family="sans-serif"
+									font-size={config.visualization.fontSize.energyExtremes}
+									font-weight="bold"
+									fill={config.visualization.colors.energyPriceMax}
+									stroke="white"
+									stroke-width="2"
+									paint-order="stroke"
+									text-anchor="middle"
+									dominant-baseline="central"
+								>
+									{formatEnergyPrice(marker.nokPerKwh)}
+								</text>
+							{/if}
+							{#if marker.priceMin}
+								<!-- Price minimum marker (cheap - green, below bar) -->
+								<text
+									x={marker.x + hourWidth / 2}
+									y={sectionPositions.energy.height - marker.y + 8}
+									font-family="sans-serif"
+									font-size={config.visualization.fontSize.energyExtremes}
+									font-weight="bold"
+									fill={config.visualization.colors.energyPriceMin}
+									stroke="white"
+									stroke-width="2"
+									paint-order="stroke"
+									text-anchor="middle"
+									dominant-baseline="central"
+								>
+									{formatEnergyPrice(marker.nokPerKwh)}
+								</text>
+							{/if}
+						{/if}
+					{/each}
+				{/if}
 			</g>
 
 			<!-- ===== FOREGROUND LAYER ===== -->
@@ -365,7 +419,6 @@
 									{marker.uv}
 								</text>
 							{/if}
-
 						{/if}
 					{/each}
 				{/if}
@@ -383,7 +436,9 @@
 								width={iconWidth}
 								height={iconWidth}
 							>
-								<title>{marker.weatherSymbol} → {iconFilename} (represents hour starting at {marker.tstr})</title>
+								<title
+									>{marker.weatherSymbol} → {iconFilename} (represents hour starting at {marker.tstr})</title
+								>
 							</image>
 						{/if}
 					{/each}
