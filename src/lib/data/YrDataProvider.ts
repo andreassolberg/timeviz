@@ -191,8 +191,13 @@ export class YrDataProvider {
 		const startISO = startTime.toISOString();
 		const endISO = endTime.toISOString();
 
-		// Frost API URL for observasjoner - bruker nærmeste stasjon
+		// Frost API URL for observasjoner - prøver først nærmeste stasjon, deretter fallback
+		// SN68860 = Trondheim-Værnes, bra for Trondheim-området
+		// Kan også prøve uten source-parameter for å få data fra alle stasjoner i området
 		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount P1H),ultraviolet_index_clear_sky`;
+		
+		console.log('Frost API URL:', url);
+		console.log('Time range:', { startISO, endISO });
 
 		try {
 			const response = await fetch(url, {
@@ -207,6 +212,17 @@ export class YrDataProvider {
 
 			const data = await response.json();
 
+			console.log('Frost API response:', {
+				totalObservations: data.data?.length || 0,
+				firstObservation: data.data?.[0],
+				hasData: !!data.data
+			});
+
+			if (!data.data || data.data.length === 0) {
+				console.warn('No historical data returned from Frost API');
+				return [];
+			}
+
 			// Behandle data og filtrer basert på timeWindow hvis oppgitt
 			let temperatures = data.data.map((observation: FrostApiEntry) => {
 				// Frost API kan returnere flere observasjoner per tidspunkt
@@ -218,7 +234,7 @@ export class YrDataProvider {
 					(obs) => obs.elementId === 'ultraviolet_index_clear_sky'
 				);
 
-				return {
+				const result = {
 					time: observation.referenceTime,
 					temperature: tempObs?.value,
 					precipitationAmount: precipObs?.value,
@@ -226,6 +242,13 @@ export class YrDataProvider {
 					uv: uvObs?.value ? Math.round(uvObs.value) : undefined,
 					station: observation.sourceId
 				};
+
+				// Log first few observations for debugging
+				if (temperatures.length < 3) {
+					console.log('Sample historical observation:', result);
+				}
+
+				return result;
 			});
 
 			// Ekstra filtrering hvis timeWindow er oppgitt (for å være sikker)
@@ -249,25 +272,57 @@ export class YrDataProvider {
 
 	/**
 	 * Henter værdata for et gitt tidsvindu og konverterer til TimeTick format
+	 * Optimalisert for å kun kalle riktige API-er basert på tidsvinduets plassering
 	 */
 	async fetchWeatherDataForTimeWindow(timeWindow: TimeWindow): Promise<TimeTick[]> {
 		const ticks: TimeTick[] = [];
+		const now = new Date();
+
+		// Analyser tidsvinduets plassering i forhold til nå
+		const isCompletelyHistorical = timeWindow.to.ts < now;
+		const isCompletelyFuture = timeWindow.from.ts > now;
+		const spansCurrentTime = timeWindow.from.ts <= now && timeWindow.to.ts >= now;
+
+		console.log('Time window analysis:', {
+			from: timeWindow.from.ts,
+			to: timeWindow.to.ts,
+			now: now,
+			isCompletelyHistorical,
+			isCompletelyFuture,
+			spansCurrentTime
+		});
 
 		try {
-			// Hent prognoser - sender med timeWindow for optimal filtrering
-			const forecasts = await this.getWeatherForecast(timeWindow);
-			const forecastTicks = this.convertForecastsToTimeTicks(forecasts, timeWindow);
-			ticks.push(...forecastTicks);
+			// Hent prognoser KUN hvis tidsvinduet inkluderer fremtidige tidspunkt
+			if (isCompletelyFuture || spansCurrentTime) {
+				console.log('Fetching forecast data from Locationforecast API...');
+				const forecasts = await this.getWeatherForecast(timeWindow);
+				const forecastTicks = this.convertForecastsToTimeTicks(forecasts, timeWindow);
+				ticks.push(...forecastTicks);
+				console.log('Added forecast ticks:', forecastTicks.length);
+			} else {
+				console.log('Skipping forecast data - time window is completely historical');
+			}
 
-			// Hent historiske data hvis Frost klient ID er tilgjengelig
-			if (this.frostClientId) {
+			// Hent historiske data KUN hvis Frost klient ID er tilgjengelig OG tidsvinduet inkluderer historiske tidspunkt
+			if (this.frostClientId && (isCompletelyHistorical || spansCurrentTime)) {
+				console.log('Fetching historical data from Frost API...');
 				const historical = await this.getHistoricalTemperature(timeWindow);
 				const historicalTicks = this.convertHistoricalToTimeTicks(historical, timeWindow);
 				ticks.push(...historicalTicks);
+				console.log('Added historical ticks:', historicalTicks.length);
+			} else if (!this.frostClientId && isCompletelyHistorical) {
+				console.warn('Cannot fetch historical data: Frost client ID is not configured');
+			} else {
+				console.log('Skipping historical data - time window is completely in the future');
 			}
 
 			// Sorter etter tid
 			ticks.sort((a, b) => a.ts.getTime() - b.ts.getTime());
+
+			console.log('Total weather data points fetched:', ticks.length);
+			const precipitationCount = ticks.filter(t => t.precipitation !== undefined).length;
+			console.log('Points with precipitation data:', precipitationCount);
 
 			return ticks;
 		} catch (error) {
@@ -332,14 +387,21 @@ export class YrDataProvider {
 		historical: FrostObservation[],
 		timeWindow: TimeWindow
 	): TimeTick[] {
-		return historical
-			.filter((obs) => {
-				const time = new Date(obs.time);
-				// For historiske data er alle verdier knyttet til tidspunktet eller foregående periode
-				// så normal filtering er korrekt
-				return time >= timeWindow.from.ts && time <= timeWindow.to.ts;
-			})
-			.map((obs) => ({
+		const filteredHistorical = historical.filter((obs) => {
+			const time = new Date(obs.time);
+			// For historiske data er alle verdier knyttet til tidspunktet eller foregående periode
+			// så normal filtering er korrekt
+			return time >= timeWindow.from.ts && time <= timeWindow.to.ts;
+		});
+
+		console.log('Converting historical data to TimeTicks:', {
+			totalHistorical: historical.length,
+			afterFiltering: filteredHistorical.length,
+			withPrecipitation: filteredHistorical.filter(obs => obs.precipitationAmount !== undefined).length
+		});
+
+		const ticks = filteredHistorical.map((obs) => {
+			const tick = {
 				ts: new Date(obs.time),
 				tstr: this.formatTime(new Date(obs.time)),
 				temperature: obs.temperature,
@@ -348,7 +410,21 @@ export class YrDataProvider {
 				uv: obs.uv,
 				station: obs.station,
 				dataType: 'historical' as const
-			}));
+			};
+
+			// Log first few ticks with precipitation for debugging
+			if (tick.precipitation !== undefined && tick.precipitation > 0) {
+				console.log('Historical tick with precipitation:', {
+					time: tick.tstr,
+					temp: tick.temperature,
+					precip: tick.precipitation
+				});
+			}
+
+			return tick;
+		});
+
+		return ticks;
 	}
 
 	/**
