@@ -99,7 +99,7 @@ export const load: PageServerLoad = async () => {
 		
 		// Temperature device
 		let temperatureData = null;
-		const tempDeviceLogId = 'homey:device:00caa90c-f5b9-4591-8f52-68557b039017:measure_temperature';
+		const tempDeviceLogId = 'homey:device:86d16c56-6190-4a77-9d7f-1d8a46355fc6:measure_temperature';
 		
 		try {
 			temperatureData = await homey.getInsightLogs(tempDeviceLogId, {

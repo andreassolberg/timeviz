@@ -173,6 +173,28 @@ class Homey {
   async getInsightLogs(logId, options = {}) {
     const { resolution = '1hour', start, end } = options;
     
+    // For Homey Pro, we need to use the correct API format
+    // The logId should be in format "homey:device:UUID:capability"
+    // We need to extract uri and id from this format
+    let uri, id;
+    
+    if (logId.includes(':')) {
+      const parts = logId.split(':');
+      if (parts.length >= 4) {
+        // Format: homey:device:UUID:capability
+        uri = parts.slice(0, 3).join(':'); // "homey:device:UUID"
+        id = parts[3]; // "capability"
+      } else {
+        // Fallback to original format
+        uri = logId;
+        id = '';
+      }
+    } else {
+      // If it's just a number or simple ID, we might need to look it up
+      uri = logId;
+      id = '';
+    }
+    
     // Build query parameters
     const params = new URLSearchParams();
     if (resolution) params.append('resolution', resolution);
@@ -180,7 +202,10 @@ class Homey {
     if (end) params.append('end', end);
     
     const queryString = params.toString();
-    const endpoint = `/api/manager/insights/log/${logId}${queryString ? `?${queryString}` : ''}`;
+    
+    // Use the correct endpoint format for Homey Pro
+    // GET /api/manager/insights/log/:uri/:id/entry
+    const endpoint = `/api/manager/insights/log/${encodeURIComponent(uri)}/${encodeURIComponent(id)}/entry${queryString ? `?${queryString}` : ''}`;
     
     // Use a cache key that includes the parameters
     const cacheKey = `insights_${logId}_${resolution}_${start || 'nostart'}_${end || 'noend'}.json`;
@@ -190,9 +215,18 @@ class Homey {
       return cachedData;
     }
 
-    const data = await this._apiCall(endpoint);
-    this.saveToCache(cacheKey, data);
-    return data;
+    try {
+      const data = await this._apiCall(endpoint);
+      this.saveToCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      // If the new format fails, try the old format as fallback
+      console.error(`Failed with new format, trying old format: ${error.message}`);
+      const oldEndpoint = `/api/manager/insights/log/${logId}${queryString ? `?${queryString}` : ''}`;
+      const data = await this._apiCall(oldEndpoint);
+      this.saveToCache(cacheKey, data);
+      return data;
+    }
   }
 }
 
