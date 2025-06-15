@@ -91,20 +91,65 @@ LON=10.3951
 
 # Frost API klient-ID (valgfri - kun for historiske data)
 FROST_CLIENT_ID=your-frost-client-id
+FROST_CLIENT_SECRET=your-frost-client-secret
 
 # User agent for API-kall
 USER_AGENT=Timeviz/1.0 (kontakt@example.com)
+
+# Norwegian energy area (NO1-NO5)
+ENERGY_AREA=NO3
+
+# Homey integration (optional)
+HOMEY_TOKEN=your-homey-bearer-token
+HOMEY_ID=your-homey-id
 ```
 
 Use `.env.example` as a template. Environment variables are automatically excluded from git.
 
-## Weather Data Integration
+## Data Integration Architecture
 
-- **YrDataProvider**: Fetches weather data from MET Norway APIs
+### Weather Data (YrDataProvider)
 - **Locationforecast API**: Free weather forecasts (no registration required)
 - **Frost API**: Historical weather data (requires client ID from frost.met.no)
 - Server-side data loading ensures API keys stay secure
 - Weather data is converted to TimeTick format for timeline visualization
+
+### Energy Data (EnergyPricesProvider)
+- **Norwegian electricity prices** from hvakosterstrommen.no API
+- Supports all price zones (NO1-NO5): Oslo, Kristiansand, Trondheim, Tromsø, Bergen
+- Hourly price data with NOK/kWh and EUR/kWh values
+- Handles multi-day date ranges with multiple API calls
+
+### Homey Smart Home Integration
+- **Device Management**: Fetches devices, zones, and logic variables
+- **Historical Data**: Uses Insights API for temperature, power, and other sensor data
+- **Endpoint Format**: `/api/manager/insights/log/{device_uri}/{full_log_id}/entry`
+- **Caching System**: File-based caching for improved performance
+- **Resolutions**: Supports lastHour, last6Hours, last24Hours, last7Days, last14Days, last31Days
+
+### Solar Data
+- **SolarCalculations**: Computes sunrise/sunset times based on coordinates
+- Uses astronomical algorithms for accurate day/night visualization
+
+## Layout System (SectionStack)
+
+The `SectionStack` class manages complex layout calculations:
+
+- **Dependency Resolution**: Sections can reference other sections via 'from' property
+- **Dynamic Heights**: Supports `heightRel` arrays for relative height calculations
+- **Validation**: Circular dependency detection and comprehensive error handling
+- **Fail-Fast**: Throws descriptive errors for invalid configurations
+
+Example configuration:
+```json
+{
+  "sections": {
+    "header": { "height": 15, "from": null },
+    "temperature": { "height": 150, "from": "header" },
+    "main": { "heightRel": ["header", "temperature"], "from": null }
+  }
+}
+```
 
 ## Weather Icons
 
@@ -115,6 +160,13 @@ The application uses SVG weather icons from the `@yr/weather-symbols` npm packag
 - Weather symbols use numeric codes (e.g., "01d", "02n", "04") mapped from API `symbol_code` values
 - Icons support day (d), night (n), and polar twilight (m) variants
 
+## Testing and Debugging
+
+- **Frost API Helper**: Use `frost-api.sh` script for testing weather API endpoints
+- **Fixed Timestamp Mode**: Lock timeline to specific time for historical debugging
+- **Caching System**: All data providers support file-based caching for development
+- **Error Handling**: Comprehensive error types in layout system for debugging
+
 ## Development Notes
 
 - When modifying SVGViz, ensure all derived values remain reactive
@@ -123,3 +175,4 @@ The application uses SVG weather icons from the `@yr/weather-symbols` npm packag
 - The "now" tick has special styling (red, thicker line)
 - Weather data points are color-coded: blue for historical, orange for forecast
 - Weather icons appear as 16x16px SVG images in timeline visualization
+- All data providers use server-side loading to protect API keys
