@@ -129,6 +129,27 @@ export class YrDataProvider {
 					const entryTime = new Date(entry.time);
 					return entryTime >= timeWindow.from.ts && entryTime <= timeWindow.to.ts;
 				});
+				
+				// Spesialhåndtering: Fjern intervall-data fra siste tidspunkt
+				// fordi de representerer data utenfor tidsvinduet
+				timeseries = timeseries.map((entry: WeatherObservation) => {
+					const entryTime = new Date(entry.time);
+					const isLastTimePoint = entryTime.getTime() === timeWindow.to.ts.getTime();
+					
+					if (isLastTimePoint) {
+						// Behold instant-verdier, fjern intervall-verdier
+						return {
+							...entry,
+							// Fjern intervall-verdier som gjelder utenfor tidsvinduet
+							weatherSymbol: undefined,
+							precipitationAmount: undefined,
+							precipitationAmountMax: undefined,
+							precipitationAmountMin: undefined
+						};
+					}
+					
+					return entry;
+				});
 			}
 
 			return timeseries;
@@ -252,6 +273,11 @@ export class YrDataProvider {
 
 	/**
 	 * Konverterer prognosedata til TimeTick format
+	 * 
+	 * VIKTIG TIDSVINDU-SEMANTIKK:
+	 * - Instant-verdier (temperatur, UV): inkluder hvis tid >= from && tid <= to
+	 * - Intervall-verdier (nedbør, værsymbol): inkluder hvis tid >= from && tid < to
+	 *   (fordi de representerer NESTE time som kan gå utenfor tidsvinduet)
 	 */
 	private convertForecastsToTimeTicks(
 		forecasts: WeatherObservation[],
@@ -260,26 +286,42 @@ export class YrDataProvider {
 		return forecasts
 			.filter((forecast) => {
 				const time = new Date(forecast.time);
+				// Inkluder kun tidspunkt som er innenfor vinduet
+				// For instant-verdier: <= to (inkluder siste tidspunkt)
+				// For intervall-verdier blir dette håndtert senere når vi filtrerer bort
+				// precipitationAmount og weatherSymbol for siste tidspunkt
 				return time >= timeWindow.from.ts && time <= timeWindow.to.ts;
 			})
-			.map((forecast) => ({
-				ts: new Date(forecast.time),
-				tstr: this.formatTime(new Date(forecast.time)),
-				temperature: forecast.temperature,
-				humidity: forecast.humidity,
-				windSpeed: forecast.windSpeed,
-				uvIndex: forecast.uvIndex,
-				uv: forecast.uv,
-				weatherSymbol: forecast.weatherSymbol,
-				precipitation: forecast.precipitationAmount,
-				precipitationMax: forecast.precipitationAmountMax,
-				precipitationMin: forecast.precipitationAmountMin,
-				dataType: 'forecast'
-			}));
+			.map((forecast) => {
+				const time = new Date(forecast.time);
+				const isLastTimePoint = time.getTime() === timeWindow.to.ts.getTime();
+				
+				return {
+					ts: time,
+					tstr: this.formatTime(time),
+					// Instant-verdier: alltid inkluder
+					temperature: forecast.temperature,
+					humidity: forecast.humidity,
+					windSpeed: forecast.windSpeed,
+					uvIndex: forecast.uvIndex,
+					uv: forecast.uv,
+					// Intervall-verdier: ekskluder på siste tidspunkt (går utenfor vindu)
+					weatherSymbol: isLastTimePoint ? undefined : forecast.weatherSymbol,
+					precipitation: isLastTimePoint ? undefined : forecast.precipitationAmount,
+					precipitationMax: isLastTimePoint ? undefined : forecast.precipitationAmountMax,
+					precipitationMin: isLastTimePoint ? undefined : forecast.precipitationAmountMin,
+					dataType: 'forecast' as const
+				};
+			});
 	}
 
 	/**
 	 * Konverterer historiske data til TimeTick format
+	 * 
+	 * HISTORISKE DATA-SEMANTIKK:
+	 * - Temperatur: instant-verdi på tidspunktet (korrekt: <= to)
+	 * - Nedbør: sum(precipitation_amount P1H) = den FOREGÅENDE timen (korrekt: <= to)
+	 *   (Dette er annerledes enn prognoser som bruker NESTE time)
 	 */
 	private convertHistoricalToTimeTicks(
 		historical: FrostObservation[],
@@ -288,17 +330,19 @@ export class YrDataProvider {
 		return historical
 			.filter((obs) => {
 				const time = new Date(obs.time);
+				// For historiske data er alle verdier knyttet til tidspunktet eller foregående periode
+				// så normal filtering er korrekt
 				return time >= timeWindow.from.ts && time <= timeWindow.to.ts;
 			})
 			.map((obs) => ({
 				ts: new Date(obs.time),
 				tstr: this.formatTime(new Date(obs.time)),
 				temperature: obs.temperature,
-				precipitation: obs.precipitationAmount,
+				precipitation: obs.precipitationAmount, // Foregående time - korrekt å inkludere
 				uvIndex: obs.uvIndex,
 				uv: obs.uv,
 				station: obs.station,
-				dataType: 'historical'
+				dataType: 'historical' as const
 			}));
 	}
 

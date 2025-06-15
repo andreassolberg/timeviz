@@ -23,6 +23,7 @@
 		extremeTemperatureMarkers,
 		precipitationMarkers,
 		precipitationScale,
+		weatherSymbolMarkers,
 		solarMarkers,
 		solarScale,
 		energyMarkers,
@@ -107,6 +108,17 @@
 
 		console.log('Application initialized successfully');
 		console.log('Section positions:', sectionPositions);
+		console.log('Weather symbol data:', {
+			weatherSymbolMarkers: weatherSymbolMarkers?.length || 0,
+			firstSymbolMarker: weatherSymbolMarkers?.[0],
+			lastSymbolMarker: weatherSymbolMarkers?.[weatherSymbolMarkers?.length - 1],
+			sampleMarkers: weatherSymbolMarkers?.slice(0, 3)
+		});
+		console.log('Timeline window check:', {
+			timelineFromTo: `${timeline.hourTicks?.[0]?.tstr} → ${timeline.hourTicks?.[timeline.hourTicks?.length - 1]?.tstr}`,
+			lastTemperatureHasSymbol: temperatureMarkers?.[temperatureMarkers?.length - 1]?.weatherSymbol !== undefined,
+			lastTemperatureHasPrecipitation: temperatureMarkers?.[temperatureMarkers?.length - 1]?.precipitation !== undefined
+		});
 		console.log('Energy data:', {
 			energyMarkers: energyMarkers?.length || 0,
 			energyScale,
@@ -354,19 +366,25 @@
 								</text>
 							{/if}
 
-							<!-- Weather Symbol icon -->
-							{#if marker.weatherSymbol}
-								{@const iconFilename = getIconFilename(marker.weatherSymbol)}
-								<image
-									href="/node_modules/@yr/weather-symbols/dist/svg/{iconFilename}.svg"
-									x={marker.x - iconWidth / 2}
-									y={marker.y - 12}
-									width={iconWidth}
-									height={iconWidth}
-								>
-									<title>{marker.weatherSymbol} → {iconFilename}</title>
-								</image>
-							{/if}
+						{/if}
+					{/each}
+				{/if}
+
+				<!-- Weather Symbol icons with corrected positioning -->
+				<!-- Symbols represent the NEXT hour and are positioned accordingly -->
+				{#if weatherSymbolMarkers && weatherSymbolMarkers.length > 0}
+					{#each weatherSymbolMarkers as marker}
+						{#if marker.weatherSymbol && marker.x !== undefined && marker.y !== undefined}
+							{@const iconFilename = getIconFilename(marker.weatherSymbol)}
+							<image
+								href="/node_modules/@yr/weather-symbols/dist/svg/{iconFilename}.svg"
+								x={marker.x - iconWidth / 2}
+								y={marker.y - 12}
+								width={iconWidth}
+								height={iconWidth}
+							>
+								<title>{marker.weatherSymbol} → {iconFilename} (represents hour starting at {marker.tstr})</title>
+							</image>
 						{/if}
 					{/each}
 				{/if}

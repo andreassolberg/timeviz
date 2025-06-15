@@ -42,6 +42,9 @@ export interface WeatherDataResult {
 	// Nedbør:
 	precipitationMarkers: TimeTick[];
 	precipitationScale: ValueScaleInfo;
+	
+	// Værsymbol:
+	weatherSymbolMarkers: TimeTick[];   // Værsymboler med korrekt posisjonering
 }
 
 /**
@@ -89,6 +92,7 @@ export class WeatherData {
 		// Generer markers for hver værtype:
 		const temperatureMarkers = this.createTemperatureMarkers(rawWeatherData, temperatureScale);
 		const extremeTemperatureMarkers = this.getExtremeTemperatureMarkers(temperatureMarkers);
+		const weatherSymbolMarkers = this.createWeatherSymbolMarkers(temperatureMarkers);
 		
 		return {
 			weatherData: rawWeatherData,
@@ -96,7 +100,8 @@ export class WeatherData {
 			temperatureScale: this.getScaleInfo(temperatureScale),
 			extremeTemperatureMarkers,
 			precipitationMarkers: this.createPrecipitationMarkers(rawWeatherData, precipitationScale),
-			precipitationScale: this.getScaleInfo(precipitationScale, true) // true = skip row markers
+			precipitationScale: this.getScaleInfo(precipitationScale, true), // true = skip row markers
+			weatherSymbolMarkers
 		};
 	}
 
@@ -163,6 +168,51 @@ export class WeatherData {
 			...tick,
 			y: precipitationScale.scale(tick.precipitation || 0)
 		}));
+	}
+
+	/**
+	 * Generate weather symbol markers with corrected positioning
+	 * Weather symbols represent the NEXT hour, so they should be positioned:
+	 * - X: centered in the hour they represent (current time + 0.5 hours)
+	 * - Y: average temperature between current and next hour
+	 * 
+	 * VIKTIG: YrDataProvider filtrerer nå bort weatherSymbol på siste tidspunkt
+	 * fordi det ville representere en time utenfor tidsvinduet.
+	 */
+	private createWeatherSymbolMarkers(temperatureMarkers: TimeTick[]): TimeTick[] {
+		const hourWidth = this.timeline.getHourWidth();
+		const symbolMarkers: TimeTick[] = [];
+
+		for (let i = 0; i < temperatureMarkers.length; i++) {
+			const current = temperatureMarkers[i];
+			const next = temperatureMarkers[i + 1];
+			
+			// Skip if no weather symbol or no coordinates
+			// (weatherSymbol kan nå være undefined på siste tidspunkt - dette er korrekt)
+			if (!current.weatherSymbol || current.x === undefined || current.y === undefined) {
+				continue;
+			}
+			
+			// For the last marker, we don't have next temperature data
+			// So we skip it as the weather symbol would apply to unknown future data
+			if (!next || next.x === undefined || next.y === undefined) {
+				continue;
+			}
+			
+			// X position: centered in the hour the symbol represents (halfway to next marker)
+			const symbolX = current.x + (hourWidth / 2);
+			
+			// Y position: average temperature between current and next hour
+			const symbolY = (current.y + next.y) / 2;
+			
+			symbolMarkers.push({
+				...current,
+				x: symbolX,
+				y: symbolY
+			});
+		}
+
+		return symbolMarkers;
 	}
 
 	/**
