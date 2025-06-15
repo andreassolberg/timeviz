@@ -8,7 +8,7 @@
 
 	// UV Index color scale using d3.scaleThreshold
 	const uvColorScale = scaleThreshold<number, string>()
-		.domain([3, 6, 8, 11])  // Breakpoints: moderate, high, very high, extreme
+		.domain([3, 6, 8, 11]) // Breakpoints: moderate, high, very high, extreme
 		.range(['#059669', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']); // darker green, orange, red, dark red, purple
 
 	// Generate SVG path using d3.line with smooth curves
@@ -80,7 +80,7 @@
 							>
 								<title>{marker.tstr}: {marker.temperature}°C</title>
 							</circle>
-							
+
 							<!-- UV Index text -->
 							{#if marker.uv !== undefined && marker.uv !== null && marker.uv >= 3}
 								<text
@@ -99,7 +99,7 @@
 									{marker.uv}
 								</text>
 							{/if}
-							
+
 							<!-- Weather Symbol text -->
 							{#if marker.weatherSymbol}
 								<text
@@ -134,20 +134,22 @@
 				<pre>{JSON.stringify(data.timeline, null, 2)}</pre>
 			</section>
 
-			<section>
-				<h3>Weather Data (processed)</h3>
-				<p>Showing first 10 data points:</p>
-				<pre>{JSON.stringify(data.weatherData.slice(0, 10), null, 2)}</pre>
+			{#if data.weatherData}
+				<section>
+					<h3>Weather Data (processed)</h3>
+					<p>Showing first 10 data points:</p>
+					<pre>{JSON.stringify(data.weatherData.slice(0, 10), null, 2)}</pre>
 
-				{#if data.weatherData.length > 10}
-					<details>
-						<summary>Show all {data.weatherData.length} data points</summary>
-						<pre>{JSON.stringify(data.weatherData, null, 2)}</pre>
-					</details>
-				{/if}
-			</section>
+					{#if data.weatherData.length > 10}
+						<details>
+							<summary>Show all {data.weatherData.length} data points</summary>
+							<pre>{JSON.stringify(data.weatherData, null, 2)}</pre>
+						</details>
+					{/if}
+				</section>
+			{/if}
 
-			{#if data.rawData.forecast}
+			{#if data.rawData && data.rawData.forecast}
 				<section>
 					<h3>Raw Forecast Data</h3>
 					<p>Showing first 5 forecast points:</p>
@@ -162,7 +164,7 @@
 				</section>
 			{/if}
 
-			{#if data.rawData.historical}
+			{#if data.rawData && data.rawData.historical}
 				<section>
 					<h3>Raw Historical Data</h3>
 					<p>Showing first 5 historical points:</p>

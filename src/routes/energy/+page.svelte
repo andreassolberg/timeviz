@@ -33,7 +33,7 @@
 
 <div class="energy-page">
 	<h1>Energy Price Data</h1>
-	
+
 	{#if error}
 		<div class="error-message">
 			<h2>⚠️ Error Loading Data</h2>
@@ -235,11 +235,11 @@
 		.energy-page {
 			padding: 10px;
 		}
-		
+
 		.data-table {
 			font-size: 0.75rem;
 		}
-		
+
 		.data-table th,
 		.data-table td {
 			padding: 6px 4px;
