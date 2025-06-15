@@ -1,15 +1,16 @@
 <script lang="ts">
 	import SVGViz from '$lib/components/SVGViz.svelte';
 	import { line, curveMonotoneX } from 'd3-shape';
-	import { scaleThreshold } from 'd3-scale';
+	import { scaleLinear } from 'd3-scale';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
 
-	// UV Index color scale using d3.scaleThreshold
-	const uvColorScale = scaleThreshold<number, string>()
-		.domain([3, 6, 8, 11]) // Breakpoints: moderate, high, very high, extreme
-		.range(['#059669', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']); // darker green, orange, red, dark red, purple
+	// UV Index color scale using d3.scaleLinear for continuous colors
+	const uvColorScale = scaleLinear<string>()
+		.domain([0, 2, 5, 7, 10, 12]) // Smooth transitions between UV levels
+		.range(['#059669', '#10b981', '#d97706', '#dc2626', '#b91c1c', '#7c3aed']) // green → light green → orange → red → dark red → purple
+		.clamp(true);
 
 
 	// Destructure data from server
@@ -193,8 +194,18 @@
 						</text>
 					{/if}
 
-					<!-- Weather Symbol text -->
+					<!-- Weather Symbol icon -->
 					{#if marker.weatherSymbol}
+						<image
+							href="/weather-icons/{marker.weatherSymbol}.svg"
+							x={marker.x - 8}
+							y={marker.y + 130}
+							width="16"
+							height="16"
+						>
+							<title>{marker.weatherSymbol}</title>
+						</image>
+						<!-- Weather Symbol text for debugging -->
 						<text
 							x={marker.x}
 							y={marker.y + 120}
