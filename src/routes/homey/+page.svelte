@@ -68,6 +68,9 @@
 
 <div class="homey-dashboard">
 	<header class="dashboard-header">
+		<div class="header-nav">
+			<a href="/" class="back-link">← Back to main page</a>
+		</div>
 		<h1>🏠 Homey Smart Home Dashboard</h1>
 		{#if data.success}
 			<div class="stats">
@@ -86,6 +89,10 @@
 				<div class="stat">
 					<span class="stat-value">{data.data.stats.totalVariables}</span>
 					<span class="stat-label">Variabler</span>
+				</div>
+				<div class="stat">
+					<span class="stat-value">{data.data.stats.totalInsights}</span>
+					<span class="stat-label">Insights</span>
 				</div>
 			</div>
 		{/if}
@@ -222,6 +229,134 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- Historical Data Test -->
+		{#if data.data.historicalData}
+			<div class="historical-section">
+				<h2>📈 Historical Device Data (Last 24h)</h2>
+				
+				<!-- Temperature Data -->
+				{#if data.data.historicalData.temperature}
+					<div class="historical-container temperature">
+						<h3>🌡️ Temperature Data</h3>
+						<div class="device-info">
+							<strong>Device ID:</strong>
+							<code>{data.data.historicalData.temperature.deviceId}</code>
+						</div>
+						
+						{#if data.data.historicalData.temperature.data?.error}
+							<div class="error-box">
+								<strong>Error:</strong> {data.data.historicalData.temperature.data.error}
+							</div>
+						{:else if data.data.historicalData.temperature.data?.values}
+							<div class="data-summary">
+								<strong>Data Points:</strong> {data.data.historicalData.temperature.data.values.length}
+							</div>
+							
+							{#if data.data.historicalData.temperature.data.values.length > 0}
+								<div class="temperature-chart">
+									<h4>Temperature Values (°C)</h4>
+									<div class="chart-container">
+										{#each data.data.historicalData.temperature.data.values as point, i}
+											<div class="data-point">
+												<div class="timestamp">{new Date(point.t).toLocaleString('no-NO')}</div>
+												<div class="temperature-value">{point.v?.toFixed(1)}°C</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+							
+							<div class="raw-data">
+								<details>
+									<summary>Raw Temperature Data</summary>
+									<pre>{JSON.stringify(data.data.historicalData.temperature.data, null, 2)}</pre>
+								</details>
+							</div>
+						{:else}
+							<div class="no-data">
+								No temperature data available for this device.
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Power Data -->
+				{#if data.data.historicalData.power}
+					<div class="historical-container power">
+						<h3>⚡ Power Data</h3>
+						<div class="device-info">
+							<strong>Device ID:</strong>
+							<code>{data.data.historicalData.power.deviceId}</code>
+						</div>
+						
+						{#if data.data.historicalData.power.data?.error}
+							<div class="error-box">
+								<strong>Error:</strong> {data.data.historicalData.power.data.error}
+							</div>
+						{:else if data.data.historicalData.power.data?.values}
+							<div class="data-summary">
+								<strong>Data Points:</strong> {data.data.historicalData.power.data.values.length}
+							</div>
+							
+							{#if data.data.historicalData.power.data.values.length > 0}
+								<div class="power-chart">
+									<h4>Power Values (kWh)</h4>
+									<div class="chart-container">
+										{#each data.data.historicalData.power.data.values as point, i}
+											<div class="data-point">
+												<div class="timestamp">{new Date(point.t).toLocaleString('no-NO')}</div>
+												<div class="power-value">{point.v?.toFixed(3)} kWh</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+							
+							<div class="raw-data">
+								<details>
+									<summary>Raw Power Data</summary>
+									<pre>{JSON.stringify(data.data.historicalData.power.data, null, 2)}</pre>
+								</details>
+							</div>
+						{:else}
+							<div class="no-data">
+								No power data available for this device.
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Insights Test -->
+		{#if data.data.insights && data.data.insights.length > 0}
+			<div class="insights-section">
+				<h2>📊 Insights API Test</h2>
+				<div class="insights-grid">
+					{#each data.data.insights as insight}
+						<div class="insight-card">
+							<div class="insight-id">{insight.id}</div>
+							{#if insight.title}
+								<div class="insight-title">{insight.title}</div>
+							{/if}
+							{#if insight.type}
+								<div class="insight-type">{insight.type}</div>
+							{/if}
+							{#if insight.units}
+								<div class="insight-units">Units: {insight.units}</div>
+							{/if}
+							<div class="insight-raw">
+								<details>
+									<summary>Raw Data</summary>
+									<pre>{JSON.stringify(insight, null, 2)}</pre>
+								</details>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -236,6 +371,24 @@
 	.dashboard-header {
 		text-align: center;
 		margin-bottom: 2rem;
+	}
+
+	.header-nav {
+		text-align: left;
+		margin-bottom: 1rem;
+	}
+
+	.back-link {
+		color: #0066cc;
+		text-decoration: none;
+		font-size: 1rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.back-link:hover {
+		text-decoration: underline;
 	}
 
 	.dashboard-header h1 {
@@ -478,5 +631,222 @@
 		font-weight: bold;
 		color: #451a03;
 		font-size: 1.1rem;
+	}
+
+	.historical-section {
+		margin-bottom: 2rem;
+	}
+
+	.historical-section h2 {
+		margin-bottom: 1.5rem;
+		color: #1f2937;
+	}
+
+	.historical-container {
+		border-radius: 12px;
+		padding: 2rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.historical-container.temperature {
+		background: #fef7ff;
+		border: 2px solid #d946ef;
+	}
+
+	.historical-container.power {
+		background: #fffbeb;
+		border: 2px solid #f59e0b;
+	}
+
+	.historical-container h3 {
+		margin: 0 0 1rem 0;
+		color: #1f2937;
+	}
+
+	.device-info {
+		margin-bottom: 1rem;
+		font-size: 0.875rem;
+	}
+
+	.device-info code {
+		background: #f3f4f6;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-family: monospace;
+		word-break: break-all;
+	}
+
+	.error-box {
+		background: #fee2e2;
+		border: 1px solid #fca5a5;
+		color: #991b1b;
+		padding: 1rem;
+		border-radius: 6px;
+		margin: 1rem 0;
+	}
+
+	.data-summary {
+		margin: 1rem 0;
+		font-weight: bold;
+		color: #7c2d12;
+	}
+
+	.temperature-chart h3 {
+		margin: 1rem 0 0.5rem 0;
+		color: #7c2d12;
+	}
+
+	.chart-container {
+		max-height: 300px;
+		overflow-y: auto;
+		border: 1px solid #e5e7eb;
+		border-radius: 6px;
+		background: white;
+	}
+
+	.data-point {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5rem 1rem;
+		border-bottom: 1px solid #f3f4f6;
+	}
+
+	.data-point:last-child {
+		border-bottom: none;
+	}
+
+	.data-point:nth-child(even) {
+		background: #f9fafb;
+	}
+
+	.timestamp {
+		font-size: 0.875rem;
+		color: #6b7280;
+		font-family: monospace;
+	}
+
+	.temperature-value {
+		font-weight: bold;
+		color: #dc2626;
+		font-size: 1rem;
+	}
+
+	.power-value {
+		font-weight: bold;
+		color: #d97706;
+		font-size: 1rem;
+	}
+
+	.power-chart h4 {
+		margin: 1rem 0 0.5rem 0;
+		color: #92400e;
+	}
+
+	.raw-data {
+		margin-top: 1.5rem;
+	}
+
+	.raw-data details {
+		font-size: 0.875rem;
+	}
+
+	.raw-data summary {
+		cursor: pointer;
+		color: #7c2d12;
+		margin-bottom: 0.5rem;
+		font-weight: bold;
+	}
+
+	.raw-data pre {
+		background: #1f2937;
+		color: #f9fafb;
+		padding: 1rem;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		overflow-x: auto;
+		max-height: 300px;
+		overflow-y: auto;
+	}
+
+	.no-data {
+		color: #6b7280;
+		font-style: italic;
+		padding: 1rem;
+		text-align: center;
+	}
+
+	.insights-section {
+		margin-bottom: 2rem;
+	}
+
+	.insights-section h2 {
+		margin-bottom: 1.5rem;
+		color: #1f2937;
+	}
+
+	.insights-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1rem;
+	}
+
+	.insight-card {
+		background: #f0f9ff;
+		border: 1px solid #0ea5e9;
+		border-radius: 8px;
+		padding: 1rem;
+	}
+
+	.insight-id {
+		font-family: monospace;
+		font-size: 0.875rem;
+		color: #0369a1;
+		margin-bottom: 0.5rem;
+		word-break: break-all;
+	}
+
+	.insight-title {
+		font-weight: bold;
+		color: #1e40af;
+		margin-bottom: 0.25rem;
+	}
+
+	.insight-type {
+		font-size: 0.875rem;
+		color: #0369a1;
+		text-transform: uppercase;
+		margin-bottom: 0.25rem;
+	}
+
+	.insight-units {
+		font-size: 0.875rem;
+		color: #6b7280;
+		margin-bottom: 0.5rem;
+	}
+
+	.insight-raw {
+		margin-top: 0.5rem;
+	}
+
+	.insight-raw details {
+		font-size: 0.875rem;
+	}
+
+	.insight-raw summary {
+		cursor: pointer;
+		color: #0369a1;
+		margin-bottom: 0.5rem;
+	}
+
+	.insight-raw pre {
+		background: #1f2937;
+		color: #f9fafb;
+		padding: 0.5rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		overflow-x: auto;
+		max-height: 200px;
+		overflow-y: auto;
 	}
 </style>

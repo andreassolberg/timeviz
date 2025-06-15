@@ -5,6 +5,7 @@
 		<li><a href="/basic">Basic Timeline</a></li>
 		<li><a href="/temperature">Temperature Data Debug</a></li>
 		<li><a href="/energy">Energy Price Debug</a></li>
+		<li><a href="/homey">🏠 Homey Smart Home Dashboard</a></li>
 	</ul>
 </div>
 
