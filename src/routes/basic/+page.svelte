@@ -360,7 +360,7 @@
 								<image
 									href="/node_modules/@yr/weather-symbols/dist/svg/{iconFilename}.svg"
 									x={marker.x - iconWidth / 2}
-									y={marker.y - 16}
+									y={marker.y - 12}
 									width={iconWidth}
 									height={iconWidth}
 								>
