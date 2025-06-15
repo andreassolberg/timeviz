@@ -194,7 +194,8 @@ export class YrDataProvider {
 		// Frost API URL for observasjoner - prøver først nærmeste stasjon, deretter fallback
 		// SN68860 = Trondheim-Værnes, bra for Trondheim-området
 		// Kan også prøve uten source-parameter for å få data fra alle stasjoner i området
-		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount P1H),ultraviolet_index_clear_sky`;
+		// VIKTIG: Bruker PT1H (ISO 8601 format) ikke P1H for precipitation element
+		const url = `https://frost.met.no/observations/v0.jsonld?sources=SN68860&referencetime=${startISO}/${endISO}&elements=air_temperature,sum(precipitation_amount PT1H),ultraviolet_index_clear_sky`;
 		
 		console.log('Frost API URL:', url);
 		console.log('Time range:', { startISO, endISO });
@@ -228,7 +229,7 @@ export class YrDataProvider {
 				// Frost API kan returnere flere observasjoner per tidspunkt
 				const tempObs = observation.observations.find((obs) => obs.elementId === 'air_temperature');
 				const precipObs = observation.observations.find(
-					(obs) => obs.elementId === 'sum(precipitation_amount P1H)'
+					(obs) => obs.elementId === 'sum(precipitation_amount PT1H)'
 				);
 				const uvObs = observation.observations.find(
 					(obs) => obs.elementId === 'ultraviolet_index_clear_sky'
