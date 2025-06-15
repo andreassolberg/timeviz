@@ -225,6 +225,7 @@ export class YrDataProvider {
 			}
 
 			// Behandle data og filtrer basert på timeWindow hvis oppgitt
+			let logCount = 0;
 			let temperatures = data.data.map((observation: FrostApiEntry) => {
 				// Frost API kan returnere flere observasjoner per tidspunkt
 				const tempObs = observation.observations.find((obs) => obs.elementId === 'air_temperature');
@@ -245,8 +246,9 @@ export class YrDataProvider {
 				};
 
 				// Log first few observations for debugging
-				if (temperatures.length < 3) {
+				if (logCount < 3) {
 					console.log('Sample historical observation:', result);
+					logCount++;
 				}
 
 				return result;

@@ -19,6 +19,12 @@ export const load: PageServerLoad = async () => {
 		const userAgent = env.USER_AGENT || 'Timeviz/1.0';
 		const energyArea = (env.ENERGY_AREA || 'NO3') as PriceZone;
 
+		console.log('Environment check:', {
+			hasFrostClientId: !!frostClientId,
+			frostClientIdLength: frostClientId?.length || 0,
+			usingFixedTime: !!config.data.timeline.fixedNow
+		});
+
 		// Create timeline with config values
 		const timeline = new Timeline(
 			config.data.timeline.hoursPast,
