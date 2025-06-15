@@ -175,8 +175,28 @@ export class WeatherData {
 			// Use the new complete data method that includes current temperature
 			const greenhouseData = await this.homeyProvider.fetchCompleteGreenhouseData(timeWindow);
 			
+			console.log(`🌡️ [WEATHERDATA] Received ${greenhouseData.length} greenhouse data points from provider`);
+			
+			if (greenhouseData.length > 0) {
+				const currentPoints = greenhouseData.filter(d => d.station === 'greenhouse-current');
+				console.log(`🌡️ [WEATHERDATA] Current temperature points: ${currentPoints.length}`);
+				
+				if (currentPoints.length > 0) {
+					console.log(`🌡️ [WEATHERDATA] Current point details:`, currentPoints[0]);
+				}
+				
+				// Show last few points for debugging
+				console.log(`🌡️ [WEATHERDATA] Last 3 greenhouse points:`, 
+					greenhouseData.slice(-3).map(p => `${p.temperature}°C at ${p.ts.toLocaleString()} (${p.station})`)
+				);
+			}
+			
 			// Add x-coordinates from timeline
-			return greenhouseData.map((tick) => this.timeline.addXToTimeTick(tick));
+			const result = greenhouseData.map((tick) => this.timeline.addXToTimeTick(tick));
+			
+			console.log(`🌡️ [WEATHERDATA] After adding X coordinates: ${result.length} points`);
+			
+			return result;
 		} catch (error) {
 			console.error('Error fetching greenhouse data:', error);
 			return [];

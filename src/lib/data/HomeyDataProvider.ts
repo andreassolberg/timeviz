@@ -38,8 +38,12 @@ export interface HomeyInsightResponse {
 export class HomeyDataProvider {
 	private homey: Homey;
 	private greenhouseDeviceId: string;
+	private token: string;
+	private homeyId: string;
 
 	constructor(config: HomeyDataConfig) {
+		this.token = config.token;
+		this.homeyId = config.homeyId;
 		this.homey = new Homey(config.token, config.homeyId, {
 			cache: true,
 			readFromCache: true
@@ -48,37 +52,135 @@ export class HomeyDataProvider {
 	}
 
 	/**
+	 * Fetch current greenhouse temperature from most recent Insights data
+	 * This is an alternative method that uses the same API as historical data
+	 */
+	async fetchCurrentGreenhouseTemperatureFromInsights(): Promise<TimeTick | null> {
+		try {
+			console.log('Fetching current greenhouse temperature from Insights API...');
+			
+			const logId = `homey:device:${this.greenhouseDeviceId}:measure_temperature`;
+			const response: HomeyInsightResponse = await this.homey.getInsightLogs(logId, {
+				resolution: 'lastHour'
+			});
+
+			if (!response?.values || response.values.length === 0) {
+				console.warn('No recent insights data available for current temperature');
+				return null;
+			}
+
+			// Get the most recent data point
+			const mostRecent = response.values[response.values.length - 1];
+			
+			if (!mostRecent || mostRecent.v === null) {
+				console.warn('Most recent insights data point has no valid temperature');
+				return null;
+			}
+
+			const timestamp = new Date(mostRecent.t);
+			const ageMinutes = (Date.now() - timestamp.getTime()) / (1000 * 60);
+			
+			console.log(`Using insights data as current: ${mostRecent.v}°C from ${timestamp.toLocaleString()} (${ageMinutes.toFixed(0)} min ago)`);
+			
+			// Only use as "current" if it's quite recent (less than 10 minutes old)
+			if (ageMinutes > 10) {
+				console.warn(`Insights data is too old (${ageMinutes.toFixed(0)} min) to use as current temperature`);
+				return null;
+			}
+
+			return {
+				ts: new Date(), // Use actual current time for positioning
+				tstr: new Date().toTimeString().slice(0, 5),
+				temperature: mostRecent.v as number,
+				dataType: 'historical' as const,
+				station: 'greenhouse-current'
+			};
+
+		} catch (error) {
+			console.error('Error fetching current temperature from insights:', error);
+			return null;
+		}
+	}
+
+	/**
 	 * Fetch current greenhouse temperature from device status
 	 */
 	async fetchCurrentGreenhouseTemperature(): Promise<TimeTick | null> {
 		try {
-			console.log('Fetching current greenhouse temperature...');
+			console.log('🌡️ [GREENHOUSE] Fetching current greenhouse temperature from Device API...');
 			
-			// Get all devices to find our greenhouse device
-			const devices = await this.homey.getDevices();
+			// Create a fresh Homey instance WITHOUT cache for real-time data
+			const freshHomey = new Homey(this.token, this.homeyId, {
+				cache: false,
+				readFromCache: false
+			});
+			
+			console.log('🌡️ [GREENHOUSE] 🚫 Using fresh API call (cache disabled) for current temperature');
+			
+			// Get all devices with fresh data (no cache)
+			const devices = await freshHomey.getDevices();
+			console.log(`🌡️ [GREENHOUSE] Total devices found: ${devices.items.length}`);
+			
 			const greenhouseDevice = devices.getItemById(this.greenhouseDeviceId);
 			
 			if (!greenhouseDevice) {
-				console.warn(`Greenhouse device ${this.greenhouseDeviceId} not found`);
+				console.warn(`🌡️ [GREENHOUSE] ❌ Device ${this.greenhouseDeviceId} not found`);
+				
+				// List all available devices for debugging
+				console.log('🌡️ [GREENHOUSE] Available devices:');
+				devices.items.slice(0, 10).forEach(device => {
+					console.log(`  - ${device.id}: ${device.name} (${device.class})`);
+				});
 				return null;
 			}
 
+			// Log device details for debugging
+			console.log('🌡️ [GREENHOUSE] ✅ Device found:', {
+				id: greenhouseDevice.id,
+				name: greenhouseDevice.name,
+				class: greenhouseDevice.class,
+				available: greenhouseDevice.available,
+				capabilities: greenhouseDevice.capabilities,
+				zoneName: greenhouseDevice.zoneName
+			});
+
 			// Get current temperature value
 			const currentTemp = greenhouseDevice.getCapabilityValue('measure_temperature');
+			
+			console.log('🌡️ [GREENHOUSE] 📊 Current temperature from Device API:', {
+				deviceId: this.greenhouseDeviceId,
+				deviceName: greenhouseDevice.name,
+				capability: 'measure_temperature',
+				value: currentTemp,
+				type: typeof currentTemp,
+				timestamp: new Date().toISOString()
+			});
 			
 			if (typeof currentTemp !== 'number') {
 				console.warn('No valid current temperature found for greenhouse device');
 				return null;
 			}
 
+			// Sanity check for reasonable temperature values
+			if (currentTemp < -50 || currentTemp > 100) {
+				console.warn(`Suspicious temperature value: ${currentTemp}°C - outside reasonable range`);
+			}
+
+			// Use same time format as historical data to ensure consistency
 			const now = new Date();
-			return {
+			console.log(`🌡️ [GREENHOUSE] ✅ Adding current temperature: ${currentTemp}°C at ${now.toLocaleString()}`);
+			
+			const result = {
 				ts: now,
 				tstr: now.toTimeString().slice(0, 5), // HH:MM format
 				temperature: currentTemp,
 				dataType: 'historical' as const,
 				station: 'greenhouse-current'
 			};
+			
+			console.log(`🌡️ [GREENHOUSE] 🎯 Final TimeTick object:`, result);
+			
+			return result;
 
 		} catch (error) {
 			console.error('Error fetching current greenhouse temperature:', error);
@@ -163,11 +265,16 @@ export class HomeyDataProvider {
 	 */
 	async fetchCompleteGreenhouseData(timeWindow: TimeWindow): Promise<TimeTick[]> {
 		try {
-			// Fetch historical data and current temperature in parallel
-			const [historicalData, currentTemp] = await Promise.all([
-				this.fetchGreenhouseTemperatureData(timeWindow),
-				this.fetchCurrentGreenhouseTemperature()
-			]);
+			// Fetch historical data first
+			const historicalData = await this.fetchGreenhouseTemperatureData(timeWindow);
+			
+			// Try to get current temperature from Device API first, fallback to Insights API
+			let currentTemp = await this.fetchCurrentGreenhouseTemperature();
+			
+			if (!currentTemp) {
+				console.log('Device API failed, trying Insights API for current temperature...');
+				currentTemp = await this.fetchCurrentGreenhouseTemperatureFromInsights();
+			}
 
 			let combinedData = [...historicalData];
 
@@ -180,13 +287,31 @@ export class HomeyDataProvider {
 				);
 
 				if (!hasRecentData) {
-					console.log('Adding current greenhouse temperature to dataset');
+					console.log('🌡️ [GREENHOUSE] ➕ Adding current greenhouse temperature to dataset');
+					
+					// Compare with most recent historical data for validation
+					if (historicalData.length > 0) {
+						const mostRecent = historicalData[historicalData.length - 1];
+						const tempDiff = Math.abs((currentTemp.temperature || 0) - (mostRecent.temperature || 0));
+						const timeDiff = Math.abs(currentTemp.ts.getTime() - mostRecent.ts.getTime()) / (1000 * 60);
+						
+						console.log(`🌡️ [GREENHOUSE] 🔍 Validation: Current ${currentTemp.temperature}°C vs Recent ${mostRecent.temperature}°C (${tempDiff.toFixed(1)}°C diff, ${timeDiff.toFixed(0)}min apart)`);
+						
+						if (tempDiff > 5) {
+							console.warn(`🌡️ [GREENHOUSE] ⚠️ Large temperature difference detected: ${tempDiff.toFixed(1)}°C - possible data issue!`);
+							console.warn(`🌡️ [GREENHOUSE] Current temp source: Device API | Historical temp source: Insights API`);
+						}
+					}
+					
 					combinedData.push(currentTemp);
 					
 					// Sort by timestamp to maintain chronological order
 					combinedData.sort((a, b) => a.ts.getTime() - b.ts.getTime());
+					
+					console.log(`🌡️ [GREENHOUSE] ✅ Final combined dataset has ${combinedData.length} points`);
+					console.log(`🌡️ [GREENHOUSE] Last 3 points:`, combinedData.slice(-3).map(p => `${p.temperature}°C at ${p.ts.toLocaleString()} (${p.station})`));
 				} else {
-					console.log('Current temperature too close to existing data point, skipping');
+					console.log('🌡️ [GREENHOUSE] ⏭️ Current temperature too close to existing data point, skipping');
 				}
 			}
 
